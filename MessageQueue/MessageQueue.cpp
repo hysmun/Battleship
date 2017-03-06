@@ -152,7 +152,7 @@ void MessageQueue::connect(int key) throw (MessageQueueException)
 }
 
 //**************************************************************************************
-int MessageQueue::getKey() const throw (MessageQueueException)
+/*int MessageQueue::getKey() const throw (MessageQueueException)
 {
   if (id==-1)
     throw MessageQueueException("Erreur de MessageQueue.getKey: File non initialisee");
@@ -162,7 +162,7 @@ int MessageQueue::getKey() const throw (MessageQueueException)
     throw MessageQueueException("Erreur de MessageQueue.getKey (msgctl)");
 
   return (int)StructMsg.msg_perm.key;
-}
+}*/
 
 //**************************************************************************************
 bool MessageQueue::isCreator() const throw (MessageQueueException)
@@ -174,7 +174,7 @@ bool MessageQueue::isCreator() const throw (MessageQueueException)
 }
 
 //**************************************************************************************
-void MessageQueue::info() const throw (MessageQueueException)
+/*void MessageQueue::info() const throw (MessageQueueException)
 {
   if (id == -1)
     throw MessageQueueException("Erreur de MessageQueue.info: File non initialisee");
@@ -195,7 +195,7 @@ void MessageQueue::info() const throw (MessageQueueException)
   cout << "PID dernier emetteur: " << StructMsg.msg_lspid << endl;
   cout << "PID dernier recepteur: " << StructMsg.msg_lrpid << endl;
   cout << "-------------------------" << endl;
-}
+}*/
 
 //**************************************************************************************
 //***** Emission / Reception ***********************************************************

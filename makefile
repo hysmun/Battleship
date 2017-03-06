@@ -5,9 +5,10 @@ RESSOURCES=Ressources
 ECRAN=Ecran
 MQ=MessageQueue
 
-CC = g++ -m64 -DSUN -DTRACE -I$(MQ) -I$(ECRAN) -I$(GRILLESDL) -I$(RESSOURCES) 
+CC = g++ -m64 -DLINUX -DTRACE -I$(MQ) -I$(ECRAN) -I$(GRILLESDL) -I$(RESSOURCES) -Wall
 OBJS = $(MQ)/MessageQueue.o $(MQ)/Message.o $(MQ)/MessageQueueException.o $(GRILLESDL)/GrilleSDL.o $(RESSOURCES)/Ressources.o $(ECRAN)/Ecran.o
 PROGRAMS = BattleShip Serveur
+TMP = "default"
 
 ALL: $(PROGRAMS)
 
@@ -50,3 +51,11 @@ clean:
 
 clobber:	clean
 	@rm -f tags $(PROGRAMS)
+
+git:
+	clear
+	clear
+	git add -A
+	git commit -m "$(TMP)"
+	git push
+

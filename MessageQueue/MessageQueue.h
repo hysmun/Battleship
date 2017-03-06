@@ -29,11 +29,11 @@ class MessageQueue
     // Supprimer l'IPC pour l'objet courant
     void connect(int key) throw (MessageQueueException);
     // Recupere une IPC existante --> a utiliser par le client qui se connecte
-    int  getKey() const throw (MessageQueueException);
+    //int  getKey() const throw (MessageQueueException);
     // Retourne la cle de l'IPC
     bool isCreator() const throw (MessageQueueException);
     // Retourne true si c'est l'objet courant qui a cree l'IPC
-    void info() const throw (MessageQueueException);
+    //void info() const throw (MessageQueueException);
     // Affiche les infos de l'IPC
 
     void    SendData(const Message& m) throw (MessageQueueException);

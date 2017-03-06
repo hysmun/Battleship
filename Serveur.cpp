@@ -17,7 +17,7 @@ MessageQueue connexion;  // File de message
 void HandlerSIGINT(int s); // Fin propre du serveur
 
 // Tableau de jeu (mer)
-int   tab[NB_LIGNES][NB_COLONNES];
+int tab[NB_LIGNES][NB_COLONNES];
 
 //**************************************************************
 int main(int argc,char* argv[])
@@ -116,4 +116,3 @@ void HandlerSIGINT(int s)
 }
 
 //************************************************************************************
-
