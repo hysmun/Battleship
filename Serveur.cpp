@@ -15,9 +15,14 @@
 MessageQueue connexion;  // File de message
 
 void HandlerSIGINT(int s); // Fin propre du serveur
+void *fctThBateau(void *);
 
 // Tableau de jeu (mer)
-int tab[NB_LIGNES][NB_COLONNES];
+int tab[NB_LIGNES][NB_COLONNES]={{0}};
+int ligne[NB_LIGNES]={0};
+int colonne[NB_COLONNES]={0};
+Bateau *lBateau[10];
+pthread_t tid[10];
 
 //**************************************************************
 int main(int argc,char* argv[])
@@ -45,12 +50,11 @@ int main(int argc,char* argv[])
   sigaction(SIGINT,&sigAct,NULL); 
 
   // Juste pour avoir un bateau --> a supprimer
-  int L=2,C=3;
-  for (int i=0 ; i<CUIRASSE ; i++) 
-  {
-    tab[L][C+i] = pthread_self();
-    DessineBateau(L,C+i,CUIRASSE,HORIZONTAL,i);
-  }
+
+  lBateau[0] = (Bateau *)malloc(sizeof(Bateau));
+  lBateau[0]->type = CUIRASSE;
+  lBateau[0]->direction = HORIZONTAL;
+  pthread_create(&tid[0],NULL,fctThBateau,lBateau[0]);
 
   // Mise en boucle du serveur --> à modifier !!!
   Message requete,reponse;
@@ -116,3 +120,90 @@ void HandlerSIGINT(int s)
 }
 
 //************************************************************************************
+
+void *fctThBateau(void *p)
+{
+	Bateau *pBateau = (Bateau *)p;
+	int posOK=0;
+	
+	for(int i; i<NB_LIGNES*NB_COLONNES; i++)
+	{
+		if(pBateau->direction == HORIZONTAL)
+		{
+			//bateau horizontal
+			if(i%NB_COLONNES == 0)
+				posOK =0;
+			if(tab[i/NB_LIGNES][i%NB_COLONNES] == 0)
+			{
+				posOK++;
+			}
+			else
+			{
+				posOK=0;
+			}
+			if(posOK == pBateau->type)
+			{
+				pBateau->L = (i/NB_LIGNES);
+				pBateau->C = (i%NB_COLONNES)-(pBateau->type-1);
+				i = NB_COLONNES*NB_LIGNES;
+			}
+		}
+		else
+		{
+			//bateau vertical
+			if(i%NB_LIGNES == 0)
+				posOK =0;
+			if(tab[i%NB_LIGNES][i/NB_COLONNES] == 0)
+			{
+				posOK++;
+			}
+			else
+			{
+				posOK=0;
+			}
+			if(posOK == pBateau->type)
+			{
+				pBateau->L = (i%NB_LIGNES)-(pBateau->type-1);
+				pBateau->C = i/NB_COLONNES;
+				i = NB_COLONNES*NB_LIGNES;
+			}
+		}
+	}
+	pthread_exit(0);
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
