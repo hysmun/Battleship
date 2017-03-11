@@ -7,6 +7,7 @@
 #include "MessageQueue.h"
 
 #include "protocole.h"
+#include "utils.h"
 
 // Dimensions de la grille de jeu
 #define NB_LIGNES   10
@@ -19,8 +20,8 @@ void *fctThBateau(void *);
 
 // Tableau de jeu (mer)
 int tab[NB_LIGNES][NB_COLONNES]={{0}};
-int ligne[NB_LIGNES]={0};
-int colonne[NB_COLONNES]={0};
+int lignes[NB_LIGNES]={0};
+int colonnes[NB_COLONNES]={0};
 Bateau *lBateau[10];
 pthread_t tid[10];
 
@@ -124,51 +125,18 @@ void HandlerSIGINT(int s)
 void *fctThBateau(void *p)
 {
 	Bateau *pBateau = (Bateau *)p;
-	int posOK=0;
-	
-	for(int i; i<NB_LIGNES*NB_COLONNES; i++)
+	printf("Bateau !!\n");
+	if(searchPosBateau(pBateau, (int ***)&tab, lignes, colonnes, NB_LIGNES, NB_COLONNES) == 0)
 	{
-		if(pBateau->direction == HORIZONTAL)
-		{
-			//bateau horizontal
-			if(i%NB_COLONNES == 0)
-				posOK =0;
-			if(tab[i/NB_LIGNES][i%NB_COLONNES] == 0)
-			{
-				posOK++;
-			}
-			else
-			{
-				posOK=0;
-			}
-			if(posOK == pBateau->type)
-			{
-				pBateau->L = (i/NB_LIGNES);
-				pBateau->C = (i%NB_COLONNES)-(pBateau->type-1);
-				i = NB_COLONNES*NB_LIGNES;
-			}
-		}
-		else
-		{
-			//bateau vertical
-			if(i%NB_LIGNES == 0)
-				posOK =0;
-			if(tab[i%NB_LIGNES][i/NB_COLONNES] == 0)
-			{
-				posOK++;
-			}
-			else
-			{
-				posOK=0;
-			}
-			if(posOK == pBateau->type)
-			{
-				pBateau->L = (i%NB_LIGNES)-(pBateau->type-1);
-				pBateau->C = i/NB_COLONNES;
-				i = NB_COLONNES*NB_LIGNES;
-			}
-		}
+		Trace("Erreur search pos bateau !!");
+		pthread_exit(0);
 	}
+	printf("truc \n");
+	DessineFullBateau(pBateau, (int **)tab);
+	printf("Bateau dessine !\n");
+	while(1)
+	{}
+	
 	pthread_exit(0);
 }
 

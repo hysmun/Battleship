@@ -10,6 +10,7 @@
 #include "MessageQueue.h"
 
 #include "protocole.h"
+#include "utils.h"
 
 // Dimensions de la grille de jeu
 #define NB_LIGNES   10

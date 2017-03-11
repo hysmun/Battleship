@@ -6,7 +6,7 @@ ECRAN=Ecran
 MQ=MessageQueue
 
 CC = g++ -m64 -DLINUX -DTRACE -I$(MQ) -I$(ECRAN) -I$(GRILLESDL) -I$(RESSOURCES) -Wall
-OBJS = $(MQ)/MessageQueue.o $(MQ)/Message.o $(MQ)/MessageQueueException.o $(GRILLESDL)/GrilleSDL.o $(RESSOURCES)/Ressources.o $(ECRAN)/Ecran.o
+OBJS = $(MQ)/MessageQueue.o $(MQ)/Message.o $(MQ)/MessageQueueException.o $(GRILLESDL)/GrilleSDL.o $(RESSOURCES)/Ressources.o $(ECRAN)/Ecran.o utils.o
 PROGRAMS = BattleShip Serveur
 TMP = "default"
 
@@ -46,6 +46,9 @@ $(MQ)/MessageQueueException.o:	$(MQ)/MessageQueueException.cpp $(MQ)/MessageQueu
 				$(CC) $(MQ)/MessageQueueException.cpp -c
 				mv MessageQueueException.o $(MQ)/MessageQueueException.o
 
+utils.o: utils.cpp utils.h
+	$(CC) utils.cpp -c -o utils.o
+
 clean:
 	@rm -f $(OBJS) core
 
@@ -58,4 +61,7 @@ git:
 	git add -A
 	git commit -m "$(TMP)"
 	git push
+	
+ipc:
+	ipcrm -Q 0x3e8
 
