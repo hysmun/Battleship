@@ -22,8 +22,11 @@ int   tabTir[NB_LIGNES][NB_COLONNES]={{0}};
 
 pid_t pidServeur = 0;
 pid_t pid=getpid();
+pthread_t tidEvent=0;
 
 MessageQueue  connexion;  // File de messages
+
+void *fctThEvent(void *p);
 
 //************************************************************************************************
 int main(int argc,char* argv[])
@@ -67,34 +70,7 @@ int main(int argc,char* argv[])
 		exit(1);
 	}
 
-	// Exemple d'utilisations des libriaires --> code à supprimer
-	/*
-	EVENT_GRILLE_SDL event;
-	bool ok = false;
-	while(!ok)
-	{
-		event = ReadEvent();
-		if (event.type == CROIX) ok = 1;
-		if (event.type == CLAVIER && event.touche == 'q') ok = 1;
-		if (event.type == CLIC_GAUCHE) 
-		{
-			// Envoi d'une requete au Serveur
-			RequeteTir reqTir;
-			reqTir.L = event.ligne - 11;
-			reqTir.C = event.colonne; 
-			Message requete(1,TIR,(char*)&reqTir,sizeof(RequeteTir)); // type = 1 --> a destination du Serveur
-			connexion.SendData(requete);
-
-			// Attente de la reponse du serveur
-			Message reponse; 
-			reponse = connexion.ReceiveData(getpid());
-			ReponseTir repTir;
-			memcpy(&repTir,reponse.getData(),sizeof(ReponseTir));
-
-			if (repTir.status == TOUCHE) DessineExplosion(repTir.L+11,repTir.C,ORANGE);
-			else DessineCible(event.ligne,event.colonne);
-		}
-	}*/
+	pthread_create(&tidEvent, NULL, fctThEvent, NULL );
 
 	// Fermeture de la grille de jeu (SDL)
 	Trace("(THREAD MAIN %d) Fermeture de la fenetre graphique...",pthread_self()); fflush(stdout);
@@ -112,7 +88,7 @@ void *fctThEvent(void *p)
 	while(!ok)
 	{
 		event = ReadEvent();
-		switch(event)
+		switch(event.type)
 		{
 			case CROIX:
 			{
