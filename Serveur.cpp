@@ -235,7 +235,17 @@ void *fctThAmiral(void *p)
 */
 void *fctThBateau(void *p)
 {
+	sigset_t blockSet, unblockSet;
+	//construction set
+	sigfillset(&blockSet);
+	sigemptyset(&unblockSet);
+	
+	//blockSet
+	sigprocmask(SIG_SETMASK, &blockSet, NULL);
+	//lock
 	pthread_mutex_lock(&mutexMer);
+	
+	//on trouve une place + dessin
 	Bateau *pBateau = (Bateau *)p;
 	printf("Bateau !!\n");
 	if(searchPosBateau(pBateau) == 0)
@@ -247,15 +257,25 @@ void *fctThBateau(void *p)
 	DessineFullBateau(pBateau, DRAW);
 	printf("Bateau dessine !\n");
 	
+	//unlock
+	pthread_mutex_unlock(&mutexMer);
+	
+	
 	
 	while(1)
 	{
-		waitRand(1000000000, 3999999999);
-		pthread_mutex_unlock(&mutexMer);
-		//libre pour les signaux
 		
+		waitRand(1000000000, 3999999999);
+		//unblockSet
+		sigprocmask(SIG_SETMASK, &unblockSet, NULL);
+		//libre pour les signaux	
+		//blockSet
+		sigprocmask(SIG_SETMASK, &blockSet, NULL);
+		//lock
 		pthread_mutex_lock(&mutexMer);
 		deplacementBateau(pBateau);
+		//unlock
+		pthread_mutex_unlock(&mutexMer);
 
 		
 	}
