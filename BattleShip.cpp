@@ -105,3 +105,68 @@ int main(int argc,char* argv[])
 }
 
 
+void *fctThEvent(void *p)
+{
+	EVENT_GRILLE_SDL event;
+	bool ok = false;
+	while(!ok)
+	{
+		event = ReadEvent();
+		switch(event)
+		{
+			case CROIX:
+			{
+				ok = 1;
+				break;
+			}
+			case CLAVIER:
+			{
+				if(event.touche == 'q')
+					ok = 1;
+				break;
+			}
+			case CLIC_GAUCHE:
+			{
+				// Envoi d'une requete au Serveur
+				RequeteTir reqTir;
+				reqTir.L = event.ligne - 11;
+				reqTir.C = event.colonne; 
+				Message requete(1,TIR,(char*)&reqTir,sizeof(RequeteTir)); // type = 1 --> a destination du Serveur
+				connexion.SendData(requete);
+
+				// Attente de la reponse du serveur
+				Message reponse; 
+				reponse = connexion.ReceiveData(getpid());
+				ReponseTir repTir;
+				memcpy(&repTir,reponse.getData(),sizeof(ReponseTir));
+
+				if (repTir.status == TOUCHE) 
+					DessineExplosion(repTir.L+11,repTir.C,ORANGE);
+				else 
+					DessineCible(event.ligne,event.colonne);
+				break;
+			}
+		}
+	}
+	pthread_exit(0);
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
