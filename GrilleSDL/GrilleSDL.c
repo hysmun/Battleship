@@ -108,6 +108,7 @@ int OuvrirGrilleSDL(int nbLignes,int nbColonnes,int tailleCarre,const char* titr
 int setTitreGrilleSDL(const char* titre)
 {
   SDL_WM_SetCaption(titre,NULL);
+  return 1;
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////

@@ -157,6 +157,21 @@ void *fctThRequete(void *p)
 			connexion.SendData(reponse);
 			break;
 		}
+		case DECONNECT:
+		{
+			Trace("Deconnection joueur : %d", requete.getExpediteur());
+			pthread_mutex_lock(&mutexJoueurs);
+			for(int i = 0;i<10;i++)
+			{
+				if(joueurs[i] != requete.getExpediteur())
+				{
+					joueurs[i] = 0;
+					i = 10;
+				}
+			}
+			pthread_mutex_unlock(&mutexJoueurs);
+			break;
+		}
 		case TIR:
 		{
 		  // Recuperation charge utile requete
@@ -185,7 +200,12 @@ void *fctThRequete(void *p)
 		  connexion.SendData(reponse);
 		  break;
 		}
+		default:
+		{
+			Trace("!!!!!     requete non traiter     !!!!!");
+		}
    }
+   pthread_exit(0);
 }
 
 /*

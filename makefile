@@ -50,9 +50,13 @@ utils.o: utils.cpp utils.h
 	$(CC) utils.cpp -c -o utils.o
 
 clean:
+	clear
+	clear
 	@rm -f $(OBJS) core
 
 clobber:	clean
+	clear
+	clear
 	@rm -f tags $(PROGRAMS)
 
 git:
@@ -63,5 +67,7 @@ git:
 	git push
 	
 ipc:
+	clear
+	clear
 	ipcrm -Q 0x3e8
 

@@ -71,7 +71,9 @@ int main(int argc,char* argv[])
 	}
 
 	pthread_create(&tidEvent, NULL, fctThEvent, NULL );
-
+	
+	
+	pthread_join(tidEvent, NULL);
 	// Fermeture de la grille de jeu (SDL)
 	Trace("(THREAD MAIN %d) Fermeture de la fenetre graphique...",pthread_self()); fflush(stdout);
 	FermetureFenetreGraphique();
@@ -92,13 +94,10 @@ void *fctThEvent(void *p)
 		{
 			case CROIX:
 			{
+				Trace("Fin joueur %d", pid);
+				Message requete(1, DECONNECT, NULL, 0);
+				connexion.SendData(requete);
 				ok = 1;
-				break;
-			}
-			case CLAVIER:
-			{
-				if(event.touche == 'q')
-					ok = 1;
 				break;
 			}
 			case CLIC_GAUCHE:
@@ -121,6 +120,10 @@ void *fctThEvent(void *p)
 				else 
 					DessineCible(event.ligne,event.colonne);
 				break;
+			}
+			default:
+			{
+				//rien
 			}
 		}
 	}
