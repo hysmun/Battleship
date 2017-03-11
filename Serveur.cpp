@@ -389,16 +389,29 @@ int deplacementBateau(Bateau *pBateau)
 	if(pBateau->direction == HORIZONTAL)
 	{
 		if(pBateau->sens == DROITE)
-			pBateau->C = (pBateau->C + 1)%NB_COLONNES;
+			// Detection obstacle
+			if(tab[pBateau->L][(pBateau->C + pBateau->type)%NB_COLONNES] != 0)
+				pBateau->sens = GAUCHE;
+			else
+				pBateau->C = (pBateau->C + 1)%NB_COLONNES;
 		else
-			pBateau->C = (pBateau->C - 1)%NB_COLONNES;
+			if(tab[pBateau->L][(pBateau->C - 1)%NB_COLONNES] != 0)
+				pBateau->sens = DROITE; 
+			else
+				pBateau->C = (pBateau->C - 1)%NB_COLONNES;
 	}
 	else
 	{
 		if(pBateau->sens == BAS)
-			pBateau->L = (pBateau->L + 1)%NB_LIGNES;
+			if(tab[(pBateau->L + pBateau->type)%NB_LIGNES][pBateau->C] != 0)
+				pBateau->sens = HAUT;
+			else
+				pBateau->L = (pBateau->L + 1)%NB_LIGNES;
 		else
-			pBateau->L = (pBateau->L - 1)%NB_LIGNES;
+			if(tab[(pBateau->L - 1)%NB_LIGNES][pBateau->C] != 0)
+				pBateau->sens = BAS;
+			else
+				pBateau->L = (pBateau->L - 1)%NB_LIGNES;
 	}
 	DessineFullBateau(pBateau, DRAW);
 	return 1;
