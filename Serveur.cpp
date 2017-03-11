@@ -140,7 +140,21 @@ void *fctThRequete(void *p)
 	{
 		case CONNECT:
 		{
-			
+			Trace("Une nouvelle personne s'est connectée : %d",requete.getExpediteur());
+			// Chercher une place libre dans le tableau de joueurs
+			pthread_mutex_lock(&mutexJoueurs);
+			for(int i = 0;i<10;i++)
+			{
+				if(joueurs[i] != 0)
+				{
+					joueurs[i] = requete.getExpediteur();
+					i = 10;
+				}
+			}
+			pthread_mutex_unlock(&mutexJoueurs);
+			reponse.setType(requete.getExpediteur());
+			connexion.SendData(reponse);
+			break;
 		}
 		case TIR:
 		{
