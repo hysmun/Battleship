@@ -17,8 +17,10 @@
 #define NB_COLONNES 10
 
 // Tableau de jeu (mer)
-int   tab[NB_LIGNES][NB_COLONNES];
-int   tabTir[NB_LIGNES][NB_COLONNES];
+int   tab[NB_LIGNES][NB_COLONNES]={{0}};
+int   tabTir[NB_LIGNES][NB_COLONNES]={{0}};
+
+pid_t pidServeur = 0;
 
 MessageQueue  connexion;  // File de messages
 
@@ -37,6 +39,12 @@ int main(int argc,char* argv[])
     printf("Serveur non en ligne...\n");
     exit(1);
   }
+  
+  //requete connexion
+  Message reception, envois;
+  envois.setType(0);
+  envois.setRequete(CONNECT);
+  connexion.SendData(envois);
 
   // Ouverture de la fenetre graphique
   Trace("(THREAD MAIN %d) Ouverture de la fenetre graphique",pthread_self()); fflush(stdout);
@@ -47,6 +55,7 @@ int main(int argc,char* argv[])
   }
 
   // Exemple d'utilisations des libriaires --> code à supprimer
+  /*
   EVENT_GRILLE_SDL event;
   bool ok = false;
   while(!ok)
@@ -72,7 +81,7 @@ int main(int argc,char* argv[])
       if (repTir.status == TOUCHE) DessineExplosion(repTir.L+11,repTir.C,ORANGE);
       else DessineCible(event.ligne,event.colonne);
     }
-  }
+  }*/
 
   // Fermeture de la grille de jeu (SDL)
   Trace("(THREAD MAIN %d) Fermeture de la fenetre graphique...",pthread_self()); fflush(stdout);

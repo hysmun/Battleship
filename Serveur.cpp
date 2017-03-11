@@ -136,7 +136,7 @@ void HandlerSIGINT(int s)
 void *fctThRequete(void *p)
 {
 	Message requete=(Message)*((Message *)p), reponse;
-	switch(requete.getType())
+	switch(requete.getRequete())
 	{
 		case CONNECT:
 		{
@@ -260,8 +260,6 @@ void *fctThBateau(void *p)
 	//unlock
 	pthread_mutex_unlock(&mutexMer);
 	
-	
-	
 	while(1)
 	{
 		
@@ -276,8 +274,6 @@ void *fctThBateau(void *p)
 		deplacementBateau(pBateau);
 		//unlock
 		pthread_mutex_unlock(&mutexMer);
-
-		
 	}
 	
 	pthread_exit(0);
