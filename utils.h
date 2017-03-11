@@ -3,9 +3,9 @@
 
 
 
+int waitTime(int sec, long nsec);
 
-
-
+int waitRand(long min, long max);
 
 
 

@@ -13,19 +13,37 @@
 #define NB_LIGNES   10
 #define NB_COLONNES 10
 
+
+#define NB_CROISEURS 2
+#define NB_DESTOYERS 3
+#define NB_CUIRASSES 1
+#define NB_TORPILLEURS 4
+
+#define NB_BATEAUX (NB_CROISEURS + NB_CUIRASSES + NB_DESTOYERS + NB_TORPILLEURS)
+
+
 MessageQueue connexion;  // File de message
 
 void HandlerSIGINT(int s); // Fin propre du serveur
 void *fctThBateau(void *);
+void *fctThAmiral(void *);
 int searchPosBateau(Bateau *pBateau);
-int DessineFullBateau(Bateau *pBateau);
+int DessineFullBateau(Bateau *pBateau, int opt);
+int deplacementBateau(Bateau *pBateau);
 
 // Tableau de jeu (mer)
 int tab[NB_LIGNES][NB_COLONNES]={{0}};
 int lignes[NB_LIGNES]={0};
 int colonnes[NB_COLONNES]={0};
-Bateau *lBateau[10];
-pthread_t tid[10];
+pthread_t tidAmiral;
+pthread_t tid;
+int nbCuirasses=0, nbCroiseurs=0, nbDestoyers=0, nbTorpilleurs=0;
+int nbBateaux=0;
+int nbVerticaux =0, nbHozizontaux=0;
+
+pthread_mutex_t mutexMer;
+pthread_mutex_t mutexBateau;
+pthread_cond_t condBateaux;
 
 //**************************************************************
 int main(int argc,char* argv[])
@@ -51,13 +69,15 @@ int main(int argc,char* argv[])
   sigAct.sa_flags = 0;
   sigemptyset(&sigAct.sa_mask);
   sigaction(SIGINT,&sigAct,NULL); 
+  
+  // creation mutex et variable condition
+	pthread_mutex_init(&mutexMer, NULL);
+	pthread_mutex_init(&mutexBateau, NULL);
+	pthread_cond_init(&condBateaux, NULL);
 
   // Juste pour avoir un bateau --> a supprimer
-
-  lBateau[0] = (Bateau *)malloc(sizeof(Bateau));
-  lBateau[0]->type = CUIRASSE;
-  lBateau[0]->direction = HORIZONTAL;
-  pthread_create(&tid[0],NULL,fctThBateau,lBateau[0]);
+	pthread_create(&tidAmiral, NULL, fctThAmiral, NULL);
+  
 
   // Mise en boucle du serveur --> à modifier !!!
   Message requete,reponse;
@@ -124,8 +144,60 @@ void HandlerSIGINT(int s)
 
 //************************************************************************************
 
+void *fctThAmiral(void *)
+{
+	Bateau *pBateau;
+	while(1)
+	{
+		pthread_mutex_lock(&mutexBateau);
+		while(nbBateaux >= NB_BATEAUX)
+			pthread_cond_wait(&condBateaux, &mutexBateau);
+		//mutex pris
+		Trace("Amiral cree un bateau !");
+		pBateau = (Bateau *)malloc(sizeof(Bateau));
+		if(nbCroiseurs < NB_CROISEURS)
+		{
+			pBateau->type = CROISEUR;
+			nbCroiseurs++;
+		}
+		else if(nbCuirasses < NB_CUIRASSES)
+		{
+			pBateau->type = CUIRASSE;
+			nbCuirasses++;
+		}
+		else if(nbDestoyers < NB_DESTOYERS)
+		{
+			pBateau->type = DESTROYER;
+			nbDestoyers++;
+		}
+		else if(nbTorpilleurs < NB_TORPILLEURS)
+		{
+			pBateau->type = TORPILLEUR;
+			nbTorpilleurs++;
+		}
+		
+		if(nbVerticaux > nbHozizontaux)
+		{
+			pBateau->direction = HORIZONTAL;
+			nbHozizontaux++;
+		}
+		else
+		{
+			pBateau->direction = VERTICAL;
+			nbVerticaux++;
+		}
+		nbBateaux++;
+		pthread_create(&tid, NULL, fctThBateau, pBateau);
+		pthread_mutex_unlock(&mutexBateau);
+		
+	}
+}
+
+
+
 void *fctThBateau(void *p)
 {
+	pthread_mutex_lock(&mutexMer);
 	Bateau *pBateau = (Bateau *)p;
 	printf("Bateau !!\n");
 	if(searchPosBateau(pBateau) == 0)
@@ -134,10 +206,21 @@ void *fctThBateau(void *p)
 		pthread_exit(0);
 	}
 	printf("truc \n");
-	DessineFullBateau(pBateau);
+	DessineFullBateau(pBateau, DRAW);
 	printf("Bateau dessine !\n");
+	
+	
 	while(1)
-	{}
+	{
+		waitRand(1000000000, 3999999999);
+		pthread_mutex_unlock(&mutexMer);
+		//libre pour les signaux
+		
+		pthread_mutex_lock(&mutexMer);
+		deplacementBateau(pBateau);
+
+		
+	}
 	
 	pthread_exit(0);
 }
@@ -157,11 +240,15 @@ int searchPosBateau(Bateau *pBateau)
 			//bateau horizontal
 			if(i%NB_COLONNES == 0)
 				posOK =0;
-			if(tab[i%NB_LIGNES][i/NB_COLONNES] == 0)
+			if(tab[i/NB_LIGNES][i%NB_COLONNES] == 0)
 			{
 				posOK++;
 			}
 			else
+			{
+				posOK=0;
+			}
+			if(lignes[i/NB_LIGNES] != 0)
 			{
 				posOK=0;
 			}
@@ -187,6 +274,10 @@ int searchPosBateau(Bateau *pBateau)
 			{
 				posOK=0;
 			}
+			if(colonnes[i/NB_COLONNES] != 0)
+			{
+				posOK =0;
+			}
 			if(posOK == pBateau->type)
 			{
 				pBateau->L = (i%NB_LIGNES)-(pBateau->type-1);
@@ -200,25 +291,64 @@ int searchPosBateau(Bateau *pBateau)
 	return posOK;
 }
 
-int DessineFullBateau(Bateau *pBateau)
+int DessineFullBateau(Bateau *pBateau, int opt)
 {
-	for(int i=0; i<pBateau->type; i++)
+	if(opt == DRAW)
 	{
-		if(pBateau->direction == HORIZONTAL)
+		for(int i=0; i<pBateau->type; i++)
 		{
-			DessineBateau(pBateau->L, pBateau->C+i, pBateau->type, HORIZONTAL,i);
-			tab[pBateau->L][pBateau->C+i] = pthread_self();
-		}
-		else
-		{
-			DessineBateau(pBateau->L+i, pBateau->C, pBateau->type, VERTICAL,i);
-			tab[pBateau->L+i][pBateau->C] = pthread_self();
+			if(pBateau->direction == HORIZONTAL)
+			{
+				DessineBateau(pBateau->L%NB_LIGNES, (pBateau->C+i)%NB_COLONNES, pBateau->type, HORIZONTAL,i);
+				tab[pBateau->L%NB_LIGNES][(pBateau->C+i)%NB_COLONNES] = pthread_self();
+			}
+			else
+			{
+				DessineBateau((pBateau->L+i)%NB_LIGNES, pBateau->C%NB_COLONNES, pBateau->type, VERTICAL,i);
+				tab[(pBateau->L+i)%NB_LIGNES][pBateau->C%NB_COLONNES] = pthread_self();
+			}
 		}
 	}
+	if(opt == CLEAR)
+	{
+		for(int i=0; i<pBateau->type; i++)
+		{
+			if(pBateau->direction == HORIZONTAL)
+			{
+				EffaceCarre(pBateau->L%NB_LIGNES, (pBateau->C+i)%NB_COLONNES);
+				tab[pBateau->L%NB_LIGNES][(pBateau->C+i)%NB_COLONNES] = 0;
+			}
+			else
+			{
+				EffaceCarre((pBateau->L+i)%NB_LIGNES, pBateau->C%NB_COLONNES);
+				tab[(pBateau->L+i)%NB_LIGNES][pBateau->C%NB_COLONNES] = 0;
+			}
+		}
+	}
+	
 	return 1;
 }
 
-
+int deplacementBateau(Bateau *pBateau)
+{
+	DessineFullBateau(pBateau, CLEAR);
+	if(pBateau->direction == HORIZONTAL)
+	{
+		if(pBateau->sens == DROITE)
+			pBateau->C = (pBateau->C + 1)%NB_COLONNES;
+		else
+			pBateau->C = (pBateau->C - 1)%NB_COLONNES;
+	}
+	else
+	{
+		if(pBateau->sens == BAS)
+			pBateau->L = (pBateau->L + 1)%NB_LIGNES;
+		else
+			pBateau->L = (pBateau->L - 1)%NB_LIGNES;
+	}
+	DessineFullBateau(pBateau, DRAW);
+	return 1;
+}
 
 
 
