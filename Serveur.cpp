@@ -35,6 +35,7 @@ void *fctThRequete(void *);
 int searchPosBateau(Bateau *pBateau);
 int DessineFullBateau(Bateau *pBateau, int opt);
 int deplacementBateau(Bateau *pBateau);
+void HandlerSIGUSR1(int sig, siginfo_t *info);
 
 // Tableau de jeu (mer)
 int tab[NB_LIGNES][NB_COLONNES]={{0}};
@@ -77,6 +78,12 @@ int main(int argc,char* argv[])
   sigAct.sa_flags = 0;
   sigemptyset(&sigAct.sa_mask);
   sigaction(SIGINT,&sigAct,NULL); 
+  
+  //setMask
+ 	sigset_t setMask, oldMask;
+ 	sigfillset(&setMask);
+ 	sigdelset(&setMask, SIGINT);
+  	sigprocmask(SIG_SETMASK, &setMask, &oldMask);
   
   // creation mutex et variable condition
 	pthread_mutex_init(&mutexMer, NULL);
@@ -274,6 +281,14 @@ void *fctThBateau(void *p)
 	//construction set
 	sigfillset(&blockSet);
 	sigemptyset(&unblockSet);
+	sigaddset(&unblockSet, SIGINT);
+	
+	//armement handler
+	struct sigaction sigAct;
+	sigAct.sa_sigaction = HandlerSIGUSR1;
+	sigAct.sa_flags = SA_SIGINFO;
+	sigemptyset(&sigAct.sa_mask);
+	sigaction(SIGUSR1, &sigAct, NULL);
 	
 	//blockSet
 	sigprocmask(SIG_SETMASK, &blockSet, NULL);
@@ -452,7 +467,10 @@ int deplacementBateau(Bateau *pBateau)
 	return 1;
 }
 
-
+void HandlerSIGUSR1(int sig, siginfo_t *info) 
+{
+	Trace("pid emetteur : %d",info->si_pid);
+}
 
 
 
