@@ -25,8 +25,13 @@
 MessageQueue connexion;  // File de message
 
 void HandlerSIGINT(int s); // Fin propre du serveur
+
+//thread
 void *fctThBateau(void *);
 void *fctThAmiral(void *);
+void *fctThRequete(void *);
+
+//autre fct
 int searchPosBateau(Bateau *pBateau);
 int DessineFullBateau(Bateau *pBateau, int opt);
 int deplacementBateau(Bateau *pBateau);
@@ -41,8 +46,11 @@ int nbCuirasses=0, nbCroiseurs=0, nbDestoyers=0, nbTorpilleurs=0;
 int nbBateaux=0;
 int nbVerticaux =0, nbHozizontaux=0;
 
+pid_t joueurs[10]={0};
+
 pthread_mutex_t mutexMer;
 pthread_mutex_t mutexBateau;
+pthread_mutex_t mutexJoueurs;
 pthread_cond_t condBateaux;
 
 //**************************************************************
@@ -73,6 +81,7 @@ int main(int argc,char* argv[])
   // creation mutex et variable condition
 	pthread_mutex_init(&mutexMer, NULL);
 	pthread_mutex_init(&mutexBateau, NULL);
+	pthread_mutex_init(&mutexJoueurs, NULL);
 	pthread_cond_init(&condBateaux, NULL);
 
   // Juste pour avoir un bateau --> a supprimer
@@ -88,34 +97,9 @@ int main(int argc,char* argv[])
       Trace("(THREAD MAIN %d) Attente d'une requete...",pthread_self());
       requete = connexion.ReceiveData(1);
       Trace("(THREAD MAIN %d) Message Recu de : %d",pthread_self(),requete.getExpediteur());   
+      pthread_create(&tid, NULL, fctThRequete, (void *)&requete);
 
-      if (requete.getRequete() == TIR)
-      {
-        // Recuperation charge utile requete
-        RequeteTir reqTir;
-        memcpy(&reqTir,requete.getData(),sizeof(RequeteTir)); // on recupere le contenu du message
-
-        // Preparation de la reponse
-        ReponseTir repTir;
-        reponse.setType(requete.getExpediteur()); // Retour a l'expediteur
-        reponse.setRequete(TIR); // pour prevnir que c'est une reponse a une requete de tir
-        repTir.L = reqTir.L;
-        repTir.C = reqTir.C;
-        if (tab[reqTir.L][reqTir.C] != 0) 
-        {
-          repTir.status = TOUCHE;
-          DessineExplosion(reqTir.L,reqTir.C,ORANGE);
-        }
-        else 
-        {
-          repTir.status = PLOUF;
-          DessineCible(reqTir.L,reqTir.C);
-        }
-        reponse.setData((char*)&repTir,sizeof(ReponseTir)); // Charge utile du message
-
-        // Envoi de la reponse
-        connexion.SendData(reponse);
-      }
+      
     }
     catch(MessageQueueException e)
     {
@@ -144,7 +128,57 @@ void HandlerSIGINT(int s)
 
 //************************************************************************************
 
-void *fctThAmiral(void *)
+/*
+*
+*			fctThRequete
+*
+*/
+void *fctThRequete(void *p)
+{
+	Message requete=(Message)*((Message *)p), reponse;
+	switch(requete.getType())
+	{
+		case CONNECT:
+		{
+			
+		}
+		case TIR:
+		{
+		  // Recuperation charge utile requete
+		  RequeteTir reqTir;
+		  memcpy(&reqTir,requete.getData(),sizeof(RequeteTir)); // on recupere le contenu du message
+
+		  // Preparation de la reponse
+		  ReponseTir repTir;
+		  reponse.setType(requete.getExpediteur()); // Retour a l'expediteur
+		  reponse.setRequete(TIR); // pour prevnir que c'est une reponse a une requete de tir
+		  repTir.L = reqTir.L;
+		  repTir.C = reqTir.C;
+		  if (tab[reqTir.L][reqTir.C] != 0) 
+		  {
+		    repTir.status = TOUCHE;
+		    DessineExplosion(reqTir.L,reqTir.C,ORANGE);
+		  }
+		  else 
+		  {
+		    repTir.status = PLOUF;
+		    DessineCible(reqTir.L,reqTir.C);
+		  }
+		  reponse.setData((char*)&repTir,sizeof(ReponseTir)); // Charge utile du message
+
+		  // Envoi de la reponse
+		  connexion.SendData(reponse);
+		  break;
+		}
+   }
+}
+
+/*
+*
+*			fctThAmiral
+*
+*/
+void *fctThAmiral(void *p)
 {
 	Bateau *pBateau;
 	while(1)
@@ -194,7 +228,11 @@ void *fctThAmiral(void *)
 }
 
 
-
+/*
+*
+*			fctThBateau
+*
+*/
 void *fctThBateau(void *p)
 {
 	pthread_mutex_lock(&mutexMer);
