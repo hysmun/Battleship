@@ -153,6 +153,7 @@ void *fctThRequete(void *p)
 			}
 			pthread_mutex_unlock(&mutexJoueurs);
 			reponse.setType(requete.getExpediteur());
+			reponse.setRequete(CONNECT);
 			connexion.SendData(reponse);
 			break;
 		}
