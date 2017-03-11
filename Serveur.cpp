@@ -17,6 +17,8 @@ MessageQueue connexion;  // File de message
 
 void HandlerSIGINT(int s); // Fin propre du serveur
 void *fctThBateau(void *);
+int searchPosBateau(Bateau *pBateau);
+int DessineFullBateau(Bateau *pBateau);
 
 // Tableau de jeu (mer)
 int tab[NB_LIGNES][NB_COLONNES]={{0}};
@@ -126,13 +128,13 @@ void *fctThBateau(void *p)
 {
 	Bateau *pBateau = (Bateau *)p;
 	printf("Bateau !!\n");
-	if(searchPosBateau(pBateau, (int ***)&tab, lignes, colonnes, NB_LIGNES, NB_COLONNES) == 0)
+	if(searchPosBateau(pBateau) == 0)
 	{
 		Trace("Erreur search pos bateau !!");
 		pthread_exit(0);
 	}
 	printf("truc \n");
-	DessineFullBateau(pBateau, (int **)tab);
+	DessineFullBateau(pBateau);
 	printf("Bateau dessine !\n");
 	while(1)
 	{}
@@ -140,9 +142,81 @@ void *fctThBateau(void *p)
 	pthread_exit(0);
 }
 
+int searchPosBateau(Bateau *pBateau)
+{
+	if(pBateau == NULL)
+	{
+		Trace("Erreur param searchBateau");
+		pthread_exit(0);
+	}
+	int posOK=0;
+	for(int i=0; i<NB_LIGNES*NB_COLONNES; i++)
+	{
+		if(pBateau->direction == HORIZONTAL)
+		{
+			//bateau horizontal
+			if(i%NB_COLONNES == 0)
+				posOK =0;
+			if(tab[i%NB_LIGNES][i/NB_COLONNES] == 0)
+			{
+				posOK++;
+			}
+			else
+			{
+				posOK=0;
+			}
+			if(posOK == pBateau->type)
+			{
+				pBateau->L = (i/NB_LIGNES);
+				pBateau->C = (i%NB_COLONNES)-(pBateau->type-1);
+				lignes[i/NB_LIGNES] = 1;
+				pBateau->sens = DROITE;
+				i = NB_COLONNES*NB_LIGNES;
+			}
+		}
+		else
+		{
+			//bateau vertical
+			if(i%NB_LIGNES == 0)
+				posOK =0;
+			if(tab[i%NB_LIGNES][i/NB_COLONNES] == 0)
+			{
+				posOK++;
+			}
+			else
+			{
+				posOK=0;
+			}
+			if(posOK == pBateau->type)
+			{
+				pBateau->L = (i%NB_LIGNES)-(pBateau->type-1);
+				pBateau->C = i/NB_COLONNES;
+				colonnes[i/NB_COLONNES] = 1;
+				pBateau->sens = BAS;
+				i = NB_COLONNES*NB_LIGNES;
+			}
+		}
+	}
+	return posOK;
+}
 
-
-
+int DessineFullBateau(Bateau *pBateau)
+{
+	for(int i=0; i<pBateau->type; i++)
+	{
+		if(pBateau->direction == HORIZONTAL)
+		{
+			DessineBateau(pBateau->L, pBateau->C+i, pBateau->type, HORIZONTAL,i);
+			tab[pBateau->L][pBateau->C+i] = pthread_self();
+		}
+		else
+		{
+			DessineBateau(pBateau->L+i, pBateau->C, pBateau->type, VERTICAL,i);
+			tab[pBateau->L+i][pBateau->C] = pthread_self();
+		}
+	}
+	return 1;
+}
 
 
 
