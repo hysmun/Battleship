@@ -149,17 +149,17 @@ void *fctReception(void *p)
 	sigfillset(&maskAll);
 	sigprocmask(SIG_SETMASK, &maskAll,NULL);
 	
-	Message requeteSousMarin;
+	Message requete;
 	Bateau bSousMarin;
 	pthread_t tidAffBateau;
 	
 	while(1)
 	{
-		requeteSousMarin = connexion.ReceiveData(getpid());
-		switch(requeteSousMarin.getRequete())
+		requete = connexion.ReceiveData(getpid());
+		switch(requete.getRequete())
 		{
 			case SOUSMARIN:
-				memcpy(&bSousMarin,requeteSousMarin.getData(),sizeof(Bateau));
+				memcpy(&bSousMarin,requete.getData(),sizeof(Bateau));
 				// Création  thread AfficheBateau avec bSousMarin en paramètre
 				pthread_create(&tidAffBateau,NULL,fctThAffBateau,bSousMarin);
 				break;
