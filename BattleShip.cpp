@@ -14,8 +14,7 @@
 
 // Dimensions de la grille de jeu
 #define NB_LIGNES			10
-#define NB_COLONNES 		21
-#define NB_LIGNEJEUX		10
+#define NB_COLONNES 		10
 
 // Tableau de jeu (mer)
 int   tab[NB_LIGNES][NB_COLONNES]={{0}};
@@ -188,6 +187,7 @@ void *fctReception(void *p)
 				break;
 		}
 	}
+	pthread_exit(0);
 }
 
 int DessineFullBateau(Bateau *pBateau, int opt)
