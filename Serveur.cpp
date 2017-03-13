@@ -232,7 +232,7 @@ void *fctThAmiral(void *p)
 	// Bloquer tous les signaux
 	sigset_t maskAll;
 	sigfillset(&maskAll);
-	sigprocmask(SIG_SETMASK, &setMask,NULL);
+	sigprocmask(SIG_SETMASK, &maskAll,NULL);
 	
 	while(1)
 	{
