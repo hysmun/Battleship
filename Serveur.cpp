@@ -317,13 +317,11 @@ void *fctThBateau(void *p)
 	Bateau *pBateau = (Bateau *)p;
 	pthread_setspecific(cleBateau, (void*)pBateau);
 	
-	printf("Bateau !!\n");
 	if(searchPosBateau(pBateau) == 0)
 	{
 		Trace("Erreur search pos bateau !!");
 		pthread_exit(0);
 	}
-	printf("truc \n");
 	DessineFullBateau(pBateau, DRAW);
 	printf("Bateau dessine !\n");
 	
