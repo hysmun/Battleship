@@ -25,6 +25,8 @@ pid_t pid=getpid();
 pthread_t tidEvent=0;
 pthread_t tidReception=0;
 
+int flagSousMarin=1;
+
 MessageQueue  connexion;  // File de messages
 
 void *fctThEvent(void *p);
@@ -113,8 +115,9 @@ void *fctThEvent(void *p)
 			case CLIC_GAUCHE:
 			{
 				// Envoi d'une requete au Serveur
-				if(event.colonne < 3 && event.ligne == 10)
+				if(event.colonne < 3 && event.ligne == 10 && flagSousMarin == 1)
 				{
+					flagSousMarin = 0;
 					Trace("Demande sous marrin\n");
 					kill(pidServeur, SIGUSR1);
 					DessineBoutonSousMarin(10, 0, ORANGE);
@@ -158,7 +161,34 @@ void *fctThAffBateau(void *p)
 	Bateau *pBateau = (Bateau *)p;
 	
 	waitTime(1, 0);
-	DessineFullBateau(pBateau, DRAW);
+	//affichage bateau
+	for(int i=0; i<pBateau->type; i++)
+	{
+		if(pBateau->direction == HORIZONTAL)
+		{
+			DessineBateau(pBateau->L%NB_LIGNES+11, (pBateau->C+i)%NB_COLONNES, pBateau->type, HORIZONTAL,i);
+		}
+		else
+		{
+			DessineBateau((pBateau->L+i)%NB_LIGNES+11, pBateau->C%NB_COLONNES, pBateau->type, VERTICAL,i);
+		}
+	}
+	//attente 4 second
+	waitTime(4, 0);
+	//enleve bateau
+	for(int i=0; i<pBateau->type; i++)
+	{
+		if(pBateau->direction == HORIZONTAL)
+		{
+			EffaceCarre(pBateau->L%NB_LIGNES+11, (pBateau->C+i)%NB_COLONNES);
+		}
+		else
+		{
+			EffaceCarre((pBateau->L+i)%NB_LIGNES+11, pBateau->C%NB_COLONNES);
+		}
+	}
+	waitTime(30, 0);
+	flagSousMarin = 1;
 	pthread_exit(0);
 }
 

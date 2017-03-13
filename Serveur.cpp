@@ -342,7 +342,7 @@ void *fctThBateau(void *p)
 		//unlock
 		pthread_mutex_unlock(&mutexMer);
 	}
-	
+	Trace("Fin bateau !!\n");
 	pthread_exit(0);
 }
 
@@ -453,6 +453,7 @@ int DessineFullBateau(Bateau *pBateau, int opt)
 int deplacementBateau(Bateau *pBateau)
 {
 	DessineFullBateau(pBateau, CLEAR);
+	int tmp=0;
 	if(pBateau->direction == HORIZONTAL)
 	{
 		if(pBateau->sens == DROITE)
@@ -462,10 +463,16 @@ int deplacementBateau(Bateau *pBateau)
 			else
 				pBateau->C = (pBateau->C + 1)%NB_COLONNES;
 		else
-			if(tab[pBateau->L][(pBateau->C - 1)%NB_COLONNES] != 0)
+		{
+			if(pBateau->C - 1 <0)
+				tmp = NB_COLONNES-1;
+			else
+				tmp = pBateau->C -1;
+			if(tab[pBateau->L][(tmp)%NB_COLONNES] != 0)
 				pBateau->sens = DROITE; 
 			else
-				pBateau->C = (pBateau->C - 1)%NB_COLONNES;
+				pBateau->C = (tmp)%NB_COLONNES;
+		}
 	}
 	else
 	{
@@ -475,10 +482,16 @@ int deplacementBateau(Bateau *pBateau)
 			else
 				pBateau->L = (pBateau->L + 1)%NB_LIGNES;
 		else
-			if(tab[(pBateau->L - 1)%NB_LIGNES][pBateau->C] != 0)
+		{
+			if(pBateau->L - 1 < 0)
+				tmp = NB_LIGNES-1;
+			else
+				tmp = pBateau->L -1;
+			if(tab[(tmp)%NB_LIGNES][pBateau->C] != 0)
 				pBateau->sens = BAS;
 			else
-				pBateau->L = (pBateau->L - 1)%NB_LIGNES;
+				pBateau->L = (tmp)%NB_LIGNES;
+		}
 	}
 	DessineFullBateau(pBateau, DRAW);
 	return 1;
