@@ -47,6 +47,7 @@ int nbCuirasses=0, nbCroiseurs=0, nbDestoyers=0, nbTorpilleurs=0;
 int nbBateaux=0;
 int nbVerticaux =0, nbHozizontaux=0;
 
+pid_t pid=getpid();
 pid_t joueurs[10]={0};
 
 pthread_mutex_t mutexMer;
@@ -489,7 +490,7 @@ void HandlerSIGUSR1(int sig, siginfo_t *info, void *p)
 {
 	Trace("pid emetteur : %d",info->si_pid);
 	Bateau *pBateau = (Bateau *)pthread_getspecific(cleBateau);
-	Message envois();
+	Message envois(info->si_pid, SOUSMARIN, (char *)pBateau, sizeof(Bateau));
 }
 
 
