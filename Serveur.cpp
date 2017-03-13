@@ -35,7 +35,7 @@ void *fctThRequete(void *);
 int searchPosBateau(Bateau *pBateau);
 int DessineFullBateau(Bateau *pBateau, int opt);
 int deplacementBateau(Bateau *pBateau);
-void HandlerSIGUSR1(int sig, siginfo_t *info);
+void HandlerSIGUSR1(int sig, siginfo_t *info, void *p);
 
 // Tableau de jeu (mer)
 int tab[NB_LIGNES][NB_COLONNES]={{0}};
@@ -53,6 +53,7 @@ pthread_mutex_t mutexMer;
 pthread_mutex_t mutexBateau;
 pthread_mutex_t mutexJoueurs;
 pthread_cond_t condBateaux;
+pthread_key_t cleBateau;
 
 //**************************************************************
 int main(int argc,char* argv[])
@@ -84,6 +85,9 @@ int main(int argc,char* argv[])
  	sigfillset(&setMask);
  	sigdelset(&setMask, SIGINT);
   	sigprocmask(SIG_SETMASK, &setMask, &oldMask);
+  	
+  	//clé variable spécifique
+  	pthread_key_create(&cleBateau, NULL);
   
   // creation mutex et variable condition
 	pthread_mutex_init(&mutexMer, NULL);
@@ -91,11 +95,11 @@ int main(int argc,char* argv[])
 	pthread_mutex_init(&mutexJoueurs, NULL);
 	pthread_cond_init(&condBateaux, NULL);
 
-  // Juste pour avoir un bateau --> a supprimer
+  // Juste pour avoir un bateau 
 	pthread_create(&tidAmiral, NULL, fctThAmiral, NULL);
   
 
-  // Mise en boucle du serveur --> à modifier !!!
+  // Mise en boucle du serveur
   Message requete,reponse;
   while(1)
   {
@@ -309,6 +313,8 @@ void *fctThBateau(void *p)
 	
 	//on trouve une place + dessin
 	Bateau *pBateau = (Bateau *)p;
+	pthread_setspecific(cleBateau, (void*)pBateau);
+	
 	printf("Bateau !!\n");
 	if(searchPosBateau(pBateau) == 0)
 	{
@@ -479,9 +485,11 @@ int deplacementBateau(Bateau *pBateau)
 	return 1;
 }
 
-void HandlerSIGUSR1(int sig, siginfo_t *info) 
+void HandlerSIGUSR1(int sig, siginfo_t *info, void *p) 
 {
 	Trace("pid emetteur : %d",info->si_pid);
+	Bateau *pBateau = (Bateau *)pthread_getspecific(cleBateau);
+	Message envois();
 }
 
 
