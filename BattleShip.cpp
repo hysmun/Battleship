@@ -13,8 +13,9 @@
 #include "utils.h"
 
 // Dimensions de la grille de jeu
-#define NB_LIGNES   10
-#define NB_COLONNES 10
+#define NB_LIGNES			10
+#define NB_COLONNES 		21
+#define NB_LIGNEJEUX		10
 
 // Tableau de jeu (mer)
 int   tab[NB_LIGNES][NB_COLONNES]={{0}};
@@ -27,6 +28,9 @@ pthread_t tidEvent=0;
 MessageQueue  connexion;  // File de messages
 
 void *fctThEvent(void *p);
+void *fctThAffBateau(void *p);
+
+int DessineFullBateau(Bateau *pBateau, int opt);
 
 //************************************************************************************************
 int main(int argc,char* argv[])
@@ -140,8 +144,57 @@ void *fctThEvent(void *p)
 	pthread_exit(0);
 }
 
+void *fctThAffBateau(void *p)
+{
+	sigset_t blockSet;
+	//construction set
+	sigfillset(&blockSet);
+	sigprocmask(SIG_SETMASK, &blockSet, NULL);
+	
+	Bateau *pBateau = (Bateau *)p;
+	
+	waitTime(1, 0);
+	DessineFullBateau(pBateau, DRAW);
+	pthread_exit(0);
+}
 
-
+int DessineFullBateau(Bateau *pBateau, int opt)
+{
+	if(opt == DRAW)
+	{
+		for(int i=0; i<pBateau->type; i++)
+		{
+			if(pBateau->direction == HORIZONTAL)
+			{
+				DessineBateau(pBateau->L%NB_LIGNES, (pBateau->C+i)%NB_COLONNES, pBateau->type, HORIZONTAL,i);
+				tab[pBateau->L%NB_LIGNES][(pBateau->C+i)%NB_COLONNES] = pthread_self();
+			}
+			else
+			{
+				DessineBateau((pBateau->L+i)%NB_LIGNES, pBateau->C%NB_COLONNES, pBateau->type, VERTICAL,i);
+				tab[(pBateau->L+i)%NB_LIGNES][pBateau->C%NB_COLONNES] = pthread_self();
+			}
+		}
+	}
+	if(opt == CLEAR)
+	{
+		for(int i=0; i<pBateau->type; i++)
+		{
+			if(pBateau->direction == HORIZONTAL)
+			{
+				EffaceCarre(pBateau->L%NB_LIGNES, (pBateau->C+i)%NB_COLONNES);
+				tab[pBateau->L%NB_LIGNES][(pBateau->C+i)%NB_COLONNES] = 0;
+			}
+			else
+			{
+				EffaceCarre((pBateau->L+i)%NB_LIGNES, pBateau->C%NB_COLONNES);
+				tab[(pBateau->L+i)%NB_LIGNES][pBateau->C%NB_COLONNES] = 0;
+			}
+		}
+	}
+	
+	return 1;
+}
 
 
 

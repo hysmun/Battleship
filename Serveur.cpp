@@ -21,7 +21,6 @@
 
 #define NB_BATEAUX (NB_CROISEURS + NB_CUIRASSES + NB_DESTOYERS + NB_TORPILLEURS)
 
-
 MessageQueue connexion;  // File de message
 
 void HandlerSIGINT(int s); // Fin propre du serveur
@@ -490,6 +489,7 @@ void HandlerSIGUSR1(int sig, siginfo_t *info, void *p)
 	Trace("pid emetteur : %d",info->si_pid);
 	Bateau *pBateau = (Bateau *)pthread_getspecific(cleBateau);
 	Message envois(info->si_pid, SOUSMARIN, (char *)pBateau, sizeof(Bateau));
+	connexion.SendData(envois);
 }
 
 
