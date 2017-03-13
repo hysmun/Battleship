@@ -223,6 +223,12 @@ void *fctThRequete(void *p)
 void *fctThAmiral(void *p)
 {
 	Bateau *pBateau;
+	
+	// Bloquer tous les signaux
+	sigset_t maskAll;
+	sigfillset(&maskAll);
+	sigprocmask(SIG_SETMASK, &setMask,NULL);
+	
 	while(1)
 	{
 		pthread_mutex_lock(&mutexBateau);
