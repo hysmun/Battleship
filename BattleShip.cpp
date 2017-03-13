@@ -71,6 +71,8 @@ int main(int argc,char* argv[])
 		Trace("Erreur de OuvrirGrilleSDL\n");
 		exit(1);
 	}
+	DessineBoutonSousMarin(10, 0, VERT);
+	
 
 	pthread_create(&tidEvent, NULL, fctThEvent, NULL );
 	pthread_create(&tidReception, NULL, fctReception, NULL);
@@ -105,6 +107,13 @@ void *fctThEvent(void *p)
 			case CLIC_GAUCHE:
 			{
 				// Envoi d'une requete au Serveur
+				if(event.colonne < 3 && event.ligne == 10)
+				{
+					Trace("Demande sous marrin\n");
+					kill(pidServeur, SIGUSR1);
+					DessineBoutonSousMarin(10, 0, ORANGE);
+				}
+				/*
 				RequeteTir reqTir;
 				reqTir.L = event.ligne - 11;
 				reqTir.C = event.colonne; 
@@ -121,6 +130,7 @@ void *fctThEvent(void *p)
 					DessineExplosion(repTir.L+11,repTir.C,ORANGE);
 				else 
 					DessineCible(event.ligne,event.colonne);
+				*/
 				break;
 			}
 			default:
