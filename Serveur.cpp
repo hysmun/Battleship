@@ -278,6 +278,7 @@ void *fctThAmiral(void *p)
 		pthread_mutex_unlock(&mutexBateau);
 		
 	}
+	return NULL;
 }
 
 
