@@ -200,8 +200,9 @@ void *fctThRequete(void *p)
 			memcpy(&reqTir,requete.getData(),sizeof(RequeteTir)); // on recupere le contenu du message
 			reponse.setType(requete.getExpediteur()); // Retour a l'expediteur
 			reponse.setRequete(TIR); // pour prevnir que c'est une reponse a une requete de tir
-			if(pthread_mutex_trylock(&mutexCible[reqTir.L][reqTir.C]))
+			if(pthread_mutex_trylock(&mutexCible[reqTir.L][reqTir.C]) == 0)
 			{
+				waitTime(5, 0);
 				// Preparation de la reponse
 				repTir.L = reqTir.L;
 				repTir.C = reqTir.C;
