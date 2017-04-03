@@ -33,7 +33,7 @@ MessageQueue  connexion;  // File de messages
 
 void *fctThEvent(void *p);
 void *fctThAffBateau(void *p);
-void *fctReception(void *p);
+void *fctThReception(void *p);
 
 int DessineFullBateau(Bateau *pBateau, int opt);
 
@@ -86,7 +86,7 @@ int main(int argc,char* argv[])
 	pthread_mutex_init(&mutexTabTir,NULL);	
 
 	pthread_create(&tidEvent, NULL, fctThEvent, NULL );
-	pthread_create(&tidReception, NULL, fctReception, NULL);
+	pthread_create(&tidReception, NULL, fctThReception, NULL);
 	
 	pthread_join(tidEvent, NULL);
 	// Fermeture de la grille de jeu (SDL)
@@ -125,24 +125,29 @@ void *fctThEvent(void *p)
 					kill(pidServeur, SIGUSR1);
 					DessineBoutonSousMarin(10, 0, ORANGE);
 				}
-				/*
-				RequeteTir reqTir;
-				reqTir.L = event.ligne - 11;
-				reqTir.C = event.colonne; 
-				Message requete(1,TIR,(char*)&reqTir,sizeof(RequeteTir)); // type = 1 --> a destination du Serveur
-				connexion.SendData(requete);
-
-				// Attente de la reponse du serveur
-				Message reponse; 
-				reponse = connexion.ReceiveData(getpid());
-				ReponseTir repTir;
-				memcpy(&repTir,reponse.getData(),sizeof(ReponseTir));
-
-				if (repTir.status == TOUCHE) 
-					DessineExplosion(repTir.L+11,repTir.C,ORANGE);
-				else 
-					DessineCible(event.ligne,event.colonne);
-				*/
+				if(event.ligne > 10)
+				{
+					Trace("demande de tir !\n");
+					pthread_mutex_lock(&mutexTabTir);
+					if(tabTir[event.ligne-11][event.colonne] != 0)
+					{
+						//on essaye deja de tirer ici
+						Trace("Position deja verouiller");
+					}
+					else
+					{
+						//on peut tirer ici 
+						Trace("Position verouiller");
+						DessineCible(event.ligne-11, event.colonne);
+						RequeteTir reqTir;
+						reqTir.L = event.ligne - 11;
+						reqTir.C = event.colonne; 
+						Message requete(1,TIR,(char*)&reqTir,sizeof(RequeteTir)); // type = 1 --> a destination du Serveur
+						connexion.SendData(requete);
+						
+					}
+					pthread_mutex_unlock(&mutexTabTir);
+				}
 				break;
 			}
 			default:
@@ -195,7 +200,7 @@ void *fctThAffBateau(void *p)
 	pthread_exit(0);
 }
 
-void *fctReception(void *p)
+void *fctThReception(void *p)
 {
 	// Bloquer les signaux
 	sigset_t maskAll;
@@ -205,6 +210,7 @@ void *fctReception(void *p)
 	Message requete;
 	Bateau bSousMarin;
 	pthread_t tidAffBateau;
+	ReponseTir tmpRepTir;
 	
 	while(1)
 	{
@@ -216,7 +222,28 @@ void *fctReception(void *p)
 				// Création  thread AfficheBateau avec bSousMarin en paramètre
 				pthread_create(&tidAffBateau,NULL,fctThAffBateau,&bSousMarin);
 				break;
+			case TIR:
+			{
+				memcpy(&tmpRepTir, requete.getData(), sizeof(ReponseTir));
+				switch(tmpRepTir.status)
+				{
+					case PLOUF:
+						break;
+					case TOUCHE:
+						break;
+					case DEJA_TOUCHE:
+						break;
+					case LOCKED:
+						break;
+					case COULE:
+						break;
+					default:
+						Trace("Erreur switch reponse tir");
+						break;
+				}
+			}
 			default:
+				Trace("Erreur switch reequete bateau");
 				break;
 		}
 	}
