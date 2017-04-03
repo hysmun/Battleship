@@ -34,6 +34,7 @@ MessageQueue  connexion;  // File de messages
 void *fctThEvent(void *p);
 void *fctThAffBateau(void *p);
 void *fctThReception(void *p);
+void *fctThAfficheBateauCoule(void *p);
 
 int DessineFullBateau(Bateau *pBateau, int opt);
 
@@ -138,7 +139,8 @@ void *fctThEvent(void *p)
 					{
 						//on peut tirer ici 
 						Trace("Position verouiller");
-						DessineCible(event.ligne-11, event.colonne);
+						tabTir[event.ligne-11][event.colonne] = 1;
+						DessineCible(event.ligne, event.colonne);
 						RequeteTir reqTir;
 						reqTir.L = event.ligne - 11;
 						reqTir.C = event.colonne; 
@@ -211,6 +213,7 @@ void *fctThReception(void *p)
 	Bateau bSousMarin;
 	pthread_t tidAffBateau;
 	ReponseTir tmpRepTir;
+	pthread_t tid;
 	
 	while(1)
 	{
@@ -228,14 +231,29 @@ void *fctThReception(void *p)
 				switch(tmpRepTir.status)
 				{
 					case PLOUF:
+						pthread_mutex_lock(&mutexTabTir);
+						tabTir[tmpRepTir.L][tmpRepTir.C] = 0;
+						pthread_mutex_unlock(&mutexTabTir);
 						break;
 					case TOUCHE:
+						EffaceCarre(tmpRepTir.L+11, tmpRepTir.C);
+						DessineExplosion(tmpRepTir.L+11, tmpRepTir.C, ORANGE);
 						break;
 					case DEJA_TOUCHE:
+						EffaceCarre(tmpRepTir.L+11, tmpRepTir.C);
+						DessineExplosion(tmpRepTir.L+11, tmpRepTir.C, BLEU);
 						break;
 					case LOCKED:
+						EffaceCarre(tmpRepTir.L, tmpRepTir.C);
+						DessineCibleVerrouillee(tmpRepTir.L+11, tmpRepTir.C);
+						waitTime(0, 500000000);
+						EffaceCarre(tmpRepTir.L+11, tmpRepTir.C);
+						pthread_mutex_lock(&mutexTabTir);
+						tabTir[tmpRepTir.L][tmpRepTir.C] = 0;
+						pthread_mutex_unlock(&mutexTabTir);
 						break;
 					case COULE:
+						pthread_create(&tid, NULL, fctThAfficheBateauCoule, &(tmpRepTir.bateau));
 						break;
 					default:
 						Trace("Erreur switch reponse tir");
@@ -247,6 +265,41 @@ void *fctThReception(void *p)
 				break;
 		}
 	}
+	pthread_exit(0);
+}
+
+void *fctThAfficheBateauCoule(void *p)
+{
+	Bateau pBateau;
+	memcpy((void *)&pBateau, (Bateau *)p, sizeof(Bateau));
+	int i;
+	for(i=0; i< pBateau.type; i++)
+	{
+		if(pBateau.direction == HORIZONTAL)
+		{
+			DessineBateau(pBateau.L%NB_LIGNES+11, (pBateau.C+i)%NB_COLONNES, pBateau.type, HORIZONTAL,i);
+			DessineExplosion(pBateau.L%NB_LIGNES+11, (pBateau.C+i)%NB_COLONNES, ORANGE);
+		}
+		else
+		{
+			DessineBateau((pBateau.L+i)%NB_LIGNES+11, pBateau.C%NB_COLONNES, pBateau.type, VERTICAL,i);
+			DessineExplosion((pBateau.L+i)%NB_LIGNES+11, pBateau.C%NB_COLONNES,ORANGE);
+		}
+	}
+	
+	pthread_mutex_lock(&mutexTabTir);
+	for(i=0; i< pBateau.type; i++)
+	{
+		if(pBateau.direction == HORIZONTAL)
+		{
+			tabTir[pBateau.L%NB_LIGNES+11][(pBateau.C+i)%NB_COLONNES] = 0;
+		}
+		else
+		{
+			tabTir[(pBateau.L+i)%NB_LIGNES+11][pBateau.C%NB_COLONNES] = 0;
+		}
+	}
+	pthread_mutex_unlock(&mutexTabTir);
 	pthread_exit(0);
 }
 
