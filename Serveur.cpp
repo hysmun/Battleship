@@ -214,18 +214,30 @@ void *fctThRequete(void *p)
 				{
 					if(tab[reqTir.L][reqTir.C] > 0)
 					{
+						Trace("Bateau toucher");
+						//il manque cette partie !!!! c'ets a la partie 6 la fin avec SIGUSR2
+						/********************************************************************
+						*								A FAIRE
+						*											A FAIRE
+						*																	A FAIRE
+						*					A   FAIRE
+						*														A FAIRE
+						*******************************************************************
+						*/
 						repTir.status = TOUCHE;
 						//DessineExplosion(reqTir.L,reqTir.C,ORANGE);
-						pthread_kill(tab[reqTir.L][reqTir.C], SIGUSR2);
+						//pthread_kill(tab[reqTir.L][reqTir.C], SIGUSR2);
 						tab[reqTir.L][reqTir.C] = -tab[reqTir.L][reqTir.C];
 					}
 					else
 					{
+						Trace("Bateau deja toucher");
 						repTir.status = DEJA_TOUCHE;
 					}
 				}
 				else 
 				{
+					Trace("Plouf !!");
 					repTir.status = PLOUF;
 				}
 				pthread_mutex_unlock(&mutexMer);
@@ -233,6 +245,7 @@ void *fctThRequete(void *p)
 			else
 			{
 				//mutex deja pris a cette position 
+				Trace("Locked");
 				repTir.L = reqTir.L;
 				repTir.C = reqTir.C;
 				repTir.status = LOCKED;
@@ -336,7 +349,7 @@ void *fctThBateau(void *p)
 	
 	// armement handler SIGUSR2
 	sigAct.sa_sigaction = HandlerSIGUSR1;
-	sigAct.sa_flags = SA_SIGINFO;
+	sigAct.sa_flags = 0;
 	sigemptyset(&sigAct.sa_mask);
 	sigaction(SIGUSR1, &sigAct, NULL);
 	

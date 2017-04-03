@@ -24,10 +24,16 @@ pid_t pidServeur = 0;
 pid_t pid=getpid();
 pthread_t tidEvent=0;
 pthread_t tidReception=0;
+pthread_t tidScore = 0;
 
 int flagSousMarin=1;
 
 pthread_mutex_t mutexTabTir;
+pthread_mutex_t mutexScore;
+pthread_cond_t condScore;
+
+int score = 0;
+int MAJScore = 1;
 
 MessageQueue  connexion;  // File de messages
 
@@ -35,6 +41,7 @@ void *fctThEvent(void *p);
 void *fctThAffBateau(void *p);
 void *fctThReception(void *p);
 void *fctThAfficheBateauCoule(void *p);
+void *fctThScore(void *p);
 
 int DessineFullBateau(Bateau *pBateau, int opt);
 
@@ -84,10 +91,13 @@ int main(int argc,char* argv[])
 	}
 	DessineBoutonSousMarin(10, 0, VERT);
 	//Init mutexTabTir
-	pthread_mutex_init(&mutexTabTir,NULL);	
+	pthread_mutex_init(&mutexTabTir,NULL);
+	pthread_mutex_init(&mutexScore, NULL);	
+	pthread_cond_init(&condScore, NULL);
 
 	pthread_create(&tidEvent, NULL, fctThEvent, NULL );
 	pthread_create(&tidReception, NULL, fctThReception, NULL);
+	pthread_create(&tidScore, NULL, fctThScore, NULL);
 	
 	pthread_join(tidEvent, NULL);
 	// Fermeture de la grille de jeu (SDL)
@@ -119,13 +129,15 @@ void *fctThEvent(void *p)
 			case CLIC_GAUCHE:
 			{
 				// Envoi d'une requete au Serveur
-				if(event.colonne < 3 && event.ligne == 10 && flagSousMarin == 1)
+				pthread_mutex_lock(&mutexScore);
+				if(event.colonne < 3 && event.ligne == 10 && flagSousMarin == 1 && score > 0)
 				{
 					flagSousMarin = 0;
 					Trace("Demande sous marrin\n");
 					kill(pidServeur, SIGUSR1);
 					DessineBoutonSousMarin(10, 0, ORANGE);
 				}
+				pthread_mutex_unlock(&mutexScore);
 				if(event.ligne > 10)
 				{
 					Trace("demande de tir !\n");
@@ -221,12 +233,14 @@ void *fctThReception(void *p)
 		switch(requete.getRequete())
 		{
 			case SOUSMARIN:
+				Trace("Reponse sous-marin");
 				memcpy(&bSousMarin,requete.getData(),sizeof(Bateau));
 				// Création  thread AfficheBateau avec bSousMarin en paramètre
 				pthread_create(&tidAffBateau,NULL,fctThAffBateau,&bSousMarin);
 				break;
 			case TIR:
 			{
+				Trace("Reponse TIR");
 				memcpy(&tmpRepTir, requete.getData(), sizeof(ReponseTir));
 				switch(tmpRepTir.status)
 				{
@@ -238,6 +252,9 @@ void *fctThReception(void *p)
 					case TOUCHE:
 						EffaceCarre(tmpRepTir.L+11, tmpRepTir.C);
 						DessineExplosion(tmpRepTir.L+11, tmpRepTir.C, ORANGE);
+						pthread_mutex_lock(&mutexScore);
+						score+=1;
+						pthread_mutex_unlock(&mutexScore);
 						break;
 					case DEJA_TOUCHE:
 						EffaceCarre(tmpRepTir.L+11, tmpRepTir.C);
@@ -254,6 +271,9 @@ void *fctThReception(void *p)
 						break;
 					case COULE:
 						pthread_create(&tid, NULL, fctThAfficheBateauCoule, &(tmpRepTir.bateau));
+						pthread_mutex_lock(&mutexScore);
+						score+=2;
+						pthread_mutex_unlock(&mutexScore);
 						break;
 					default:
 						Trace("Erreur switch reponse tir");
@@ -261,7 +281,7 @@ void *fctThReception(void *p)
 				}
 			}
 			default:
-				Trace("Erreur switch reequete bateau");
+				Trace("Erreur switch requete bateau");
 				break;
 		}
 	}
@@ -270,6 +290,12 @@ void *fctThReception(void *p)
 
 void *fctThAfficheBateauCoule(void *p)
 {
+	// Bloquer les signaux
+	sigset_t maskAll;
+	sigfillset(&maskAll);
+	sigprocmask(SIG_SETMASK, &maskAll,NULL);
+	
+	
 	Bateau pBateau;
 	memcpy((void *)&pBateau, (Bateau *)p, sizeof(Bateau));
 	int i;
@@ -302,6 +328,33 @@ void *fctThAfficheBateauCoule(void *p)
 	pthread_mutex_unlock(&mutexTabTir);
 	pthread_exit(0);
 }
+
+void *fctThScore(void *p)
+{
+	// Bloquer les signaux
+	sigset_t maskAll;
+	sigfillset(&maskAll);
+	sigprocmask(SIG_SETMASK, &maskAll,NULL);
+	
+	
+	while(1)
+	{
+		pthread_mutex_lock(&mutexScore);
+		while(!MAJScore)
+			pthread_cond_wait(&condScore, &mutexScore);
+		//score mis a jour
+		for(int i =0; i<3; i++)
+		{
+			EffaceCarre(10, 7+i);
+			DessineChiffre(10, 7+i, score%(10*(3-i)));
+		}
+		MAJScore = 0;
+		pthread_mutex_unlock(&mutexScore);
+	}
+	
+	pthread_exit(0);
+}
+
 
 int DessineFullBateau(Bateau *pBateau, int opt)
 {
