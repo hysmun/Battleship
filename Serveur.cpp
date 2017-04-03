@@ -54,6 +54,7 @@ pthread_mutex_t mutexBateau;
 pthread_mutex_t mutexJoueurs;
 pthread_cond_t condBateaux;
 pthread_key_t cleBateau;
+pthread_mutex_t mutexCible[NB_LIGNES][NB_COLONNES];
 
 //**************************************************************
 int main(int argc,char* argv[])
@@ -94,6 +95,14 @@ int main(int argc,char* argv[])
 	pthread_mutex_init(&mutexBateau, NULL);
 	pthread_mutex_init(&mutexJoueurs, NULL);
 	pthread_cond_init(&condBateaux, NULL);
+	
+	for(int i = 0; i< NB_LIGNES; i++)
+	{
+		for(int j = 0; j < NB_COLONNES; j++)
+		{
+			pthread_mutex_init(&mutexCible[i][j], NULL);
+		}
+	}
 
   // Juste pour avoir un bateau 
 	pthread_create(&tidAmiral, NULL, fctThAmiral, NULL);
@@ -185,31 +194,41 @@ void *fctThRequete(void *p)
 		}
 		case TIR:
 		{
-		  // Recuperation charge utile requete
-		  RequeteTir reqTir;
-		  memcpy(&reqTir,requete.getData(),sizeof(RequeteTir)); // on recupere le contenu du message
-
-		  // Preparation de la reponse
-		  ReponseTir repTir;
-		  reponse.setType(requete.getExpediteur()); // Retour a l'expediteur
-		  reponse.setRequete(TIR); // pour prevnir que c'est une reponse a une requete de tir
-		  repTir.L = reqTir.L;
-		  repTir.C = reqTir.C;
-		  if (tab[reqTir.L][reqTir.C] != 0) 
-		  {
-		    repTir.status = TOUCHE;
-		    DessineExplosion(reqTir.L,reqTir.C,ORANGE);
-		  }
-		  else 
-		  {
-		    repTir.status = PLOUF;
-		    DessineCible(reqTir.L,reqTir.C);
-		  }
-		  reponse.setData((char*)&repTir,sizeof(ReponseTir)); // Charge utile du message
-
-		  // Envoi de la reponse
-		  connexion.SendData(reponse);
-		  break;
+			// Recuperation charge utile requete
+			RequeteTir reqTir;
+			ReponseTir repTir;
+			memcpy(&reqTir,requete.getData(),sizeof(RequeteTir)); // on recupere le contenu du message
+			reponse.setType(requete.getExpediteur()); // Retour a l'expediteur
+			reponse.setRequete(TIR); // pour prevnir que c'est une reponse a une requete de tir
+			if(pthread_mutex_trylock(&mutexCible[reqTir.L][reqTir.C]))
+			{
+				// Preparation de la reponse
+				repTir.L = reqTir.L;
+				repTir.C = reqTir.C;
+				if (tab[reqTir.L][reqTir.C] != 0) 
+				{
+					repTir.status = TOUCHE;
+					DessineExplosion(reqTir.L,reqTir.C,ORANGE);
+				}
+				else 
+				{
+					repTir.status = PLOUF;
+					DessineCible(reqTir.L,reqTir.C);
+				}
+			}
+			else
+			{
+				//mutex deja pris a cette position 
+				repTir.L = reqTir.L;
+				repTir.C = reqTir.C;
+				repTir.status = LOCKED;
+			}
+			
+			
+			reponse.setData((char*)&repTir,sizeof(ReponseTir)); // Charge utile du message
+			// Envoi de la reponse
+			connexion.SendData(reponse);
+			break;
 		}
 		default:
 		{
