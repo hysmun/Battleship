@@ -4,6 +4,7 @@
 #include <pthread.h>
 #include <signal.h>
 #include <time.h>
+#include <math.h>
 #include "Ecran.h"
 #include "GrilleSDL.h"
 #include "Ressources.h"
@@ -136,8 +137,11 @@ void *fctThEvent(void *p)
 					Trace("Demande sous marrin\n");
 					kill(pidServeur, SIGUSR1);
 					DessineBoutonSousMarin(10, 0, ORANGE);
+					score -= 1;
+					MAJScore=1;
 				}
 				pthread_mutex_unlock(&mutexScore);
+				pthread_cond_signal(&condScore);
 				if(event.ligne > 10)
 				{
 					Trace("demande de tir !\n");
@@ -245,22 +249,28 @@ void *fctThReception(void *p)
 				switch(tmpRepTir.status)
 				{
 					case PLOUF:
+						Trace("Plouf");
 						pthread_mutex_lock(&mutexTabTir);
 						tabTir[tmpRepTir.L][tmpRepTir.C] = 0;
 						pthread_mutex_unlock(&mutexTabTir);
 						break;
 					case TOUCHE:
+						Trace("Touche");
 						EffaceCarre(tmpRepTir.L+11, tmpRepTir.C);
 						DessineExplosion(tmpRepTir.L+11, tmpRepTir.C, ORANGE);
 						pthread_mutex_lock(&mutexScore);
 						score+=1;
+						MAJScore=1;
 						pthread_mutex_unlock(&mutexScore);
+						pthread_cond_signal(&condScore);
 						break;
 					case DEJA_TOUCHE:
+						Trace("Deja Touche");
 						EffaceCarre(tmpRepTir.L+11, tmpRepTir.C);
 						DessineExplosion(tmpRepTir.L+11, tmpRepTir.C, BLEU);
 						break;
 					case LOCKED:
+						Trace("locked");
 						EffaceCarre(tmpRepTir.L, tmpRepTir.C);
 						DessineCibleVerrouillee(tmpRepTir.L+11, tmpRepTir.C);
 						waitTime(0, 500000000);
@@ -270,15 +280,19 @@ void *fctThReception(void *p)
 						pthread_mutex_unlock(&mutexTabTir);
 						break;
 					case COULE:
+						Trace("Coule");
 						pthread_create(&tid, NULL, fctThAfficheBateauCoule, &(tmpRepTir.bateau));
 						pthread_mutex_lock(&mutexScore);
 						score+=2;
+						MAJScore=1;
 						pthread_mutex_unlock(&mutexScore);
+						pthread_cond_signal(&condScore);
 						break;
 					default:
 						Trace("Erreur switch reponse tir");
 						break;
 				}
+				break;
 			}
 			default:
 				Trace("Erreur switch requete bateau");
@@ -336,7 +350,7 @@ void *fctThScore(void *p)
 	sigfillset(&maskAll);
 	sigprocmask(SIG_SETMASK, &maskAll,NULL);
 	
-	
+	int modulo = 100;
 	while(1)
 	{
 		pthread_mutex_lock(&mutexScore);
@@ -346,7 +360,8 @@ void *fctThScore(void *p)
 		for(int i =0; i<3; i++)
 		{
 			EffaceCarre(10, 7+i);
-			DessineChiffre(10, 7+i, score%(10*(3-i)));
+			DessineChiffre(10, 7+i, (score/modulo));
+			modulo /= (int)10;
 		}
 		MAJScore = 0;
 		pthread_mutex_unlock(&mutexScore);

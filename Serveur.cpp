@@ -36,6 +36,7 @@ int DessineFullBateau(Bateau *pBateau, int opt);
 int deplacementBateau(Bateau *pBateau);
 void HandlerSIGUSR1(int sig, siginfo_t *info, void *p);
 void HandlerSIGUSR1(int sig);
+void AfficheMer(void);
 
 // Tableau de jeu (mer)
 int tab[NB_LIGNES][NB_COLONNES]={{0}};
@@ -111,6 +112,8 @@ int main(int argc,char* argv[])
 	pthread_create(&tidAmiral, NULL, fctThAmiral, NULL);
   
 
+	
+
   // Mise en boucle du serveur
   Message requete,reponse;
   while(1)
@@ -158,6 +161,11 @@ void HandlerSIGINT(int s)
 */
 void *fctThRequete(void *p)
 {
+	// Bloquer les signaux
+	sigset_t maskAll;
+	sigfillset(&maskAll);
+	sigprocmask(SIG_SETMASK, &maskAll,NULL);
+	
 	Message requete=(Message)*((Message *)p), reponse;
 	switch(requete.getRequete())
 	{
@@ -197,12 +205,14 @@ void *fctThRequete(void *p)
 		}
 		case TIR:
 		{
+			AfficheMer();
 			// Recuperation charge utile requete
 			RequeteTir reqTir;
 			ReponseTir repTir;
 			memcpy(&reqTir,requete.getData(),sizeof(RequeteTir)); // on recupere le contenu du message
 			reponse.setType(requete.getExpediteur()); // Retour a l'expediteur
 			reponse.setRequete(TIR); // pour prevnir que c'est une reponse a une requete de tir
+			repTir.status = PLOUF;
 			if(pthread_mutex_trylock(&mutexCible[reqTir.L][reqTir.C]) == 0)
 			{
 				waitTime(5, 0);
@@ -212,7 +222,7 @@ void *fctThRequete(void *p)
 				pthread_mutex_lock(&mutexMer);
 				if (tab[reqTir.L][reqTir.C] != 0) 
 				{
-					if(tab[reqTir.L][reqTir.C] > 0)
+					if(tab[reqTir.L][reqTir.C] >= 0)
 					{
 						Trace("Bateau toucher");
 						//il manque cette partie !!!! c'ets a la partie 6 la fin avec SIGUSR2
@@ -560,7 +570,27 @@ void HandlerSIGUSR2(int sig)
 	return;
 }
 
-
+void AfficheMer(void)
+{
+	pthread_mutex_lock(&mutexMer);
+	for(int i = 0; i < NB_LIGNES; i++)
+	{
+		for(int j = 0; j < NB_COLONNES; j++)
+		{
+			if(tab[i][j] != 0)
+			{
+				if(tab[i][j] > 0)
+					printf("1 ");
+				else
+					printf("2 ");
+			}
+			else
+			printf("0 ");
+		}
+		printf("\n");
+	}
+	pthread_mutex_unlock(&mutexMer);
+}
 
 
 
