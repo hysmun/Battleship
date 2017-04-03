@@ -35,6 +35,7 @@ int searchPosBateau(Bateau *pBateau);
 int DessineFullBateau(Bateau *pBateau, int opt);
 int deplacementBateau(Bateau *pBateau);
 void HandlerSIGUSR1(int sig, siginfo_t *info, void *p);
+void HandlerSIGUSR1(int sig);
 
 // Tableau de jeu (mer)
 int tab[NB_LIGNES][NB_COLONNES]={{0}};
@@ -55,6 +56,8 @@ pthread_mutex_t mutexJoueurs;
 pthread_cond_t condBateaux;
 pthread_key_t cleBateau;
 pthread_mutex_t mutexCible[NB_LIGNES][NB_COLONNES];
+
+ComBateau comBateau[NB_BATEAUX];
 
 //**************************************************************
 int main(int argc,char* argv[])
@@ -206,16 +209,26 @@ void *fctThRequete(void *p)
 				// Preparation de la reponse
 				repTir.L = reqTir.L;
 				repTir.C = reqTir.C;
+				pthread_mutex_lock(&mutexMer);
 				if (tab[reqTir.L][reqTir.C] != 0) 
 				{
-					repTir.status = TOUCHE;
-					DessineExplosion(reqTir.L,reqTir.C,ORANGE);
+					if(tab[reqTir.L][reqTir.C] > 0)
+					{
+						repTir.status = TOUCHE;
+						//DessineExplosion(reqTir.L,reqTir.C,ORANGE);
+						pthread_kill(tab[reqTir.L][reqTir.C], SIGUSR2);
+						tab[reqTir.L][reqTir.C] = -tab[reqTir.L][reqTir.C];
+					}
+					else
+					{
+						repTir.status = DEJA_TOUCHE;
+					}
 				}
 				else 
 				{
 					repTir.status = PLOUF;
-					DessineCible(reqTir.L,reqTir.C);
 				}
+				pthread_mutex_unlock(&mutexMer);
 			}
 			else
 			{
@@ -320,8 +333,12 @@ void *fctThBateau(void *p)
 	sigAct.sa_flags = SA_SIGINFO;
 	sigemptyset(&sigAct.sa_mask);
 	sigaction(SIGUSR1, &sigAct, NULL);
-	// armement handler SIGUSR2
 	
+	// armement handler SIGUSR2
+	sigAct.sa_sigaction = HandlerSIGUSR1;
+	sigAct.sa_flags = SA_SIGINFO;
+	sigemptyset(&sigAct.sa_mask);
+	sigaction(SIGUSR1, &sigAct, NULL);
 	
 	
 	
@@ -525,7 +542,10 @@ void HandlerSIGUSR1(int sig, siginfo_t *info, void *p)
 	connexion.SendData(envois);
 }
 
-
+void HandlerSIGUSR2(int sig)
+{
+	return;
+}
 
 
 
