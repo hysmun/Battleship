@@ -360,9 +360,10 @@ void *fctThScore(void *p)
 		for(int i =0; i<3; i++)
 		{
 			EffaceCarre(10, 7+i);
-			DessineChiffre(10, 7+i, (score/modulo));
-			modulo /= (int)10;
+			DessineChiffre(10, 7+i, score == 0 ? 0 : (int)(score/modulo));
+			modulo /= 10;
 		}
+		modulo = 100;
 		MAJScore = 0;
 		pthread_mutex_unlock(&mutexScore);
 	}

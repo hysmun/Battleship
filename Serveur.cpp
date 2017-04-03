@@ -1,6 +1,7 @@
 #include <unistd.h>
 #include <signal.h>
 #include <pthread.h>
+#include <limits.h>
 #include "Ecran.h"
 #include "GrilleSDL.h"
 #include "Ressources.h"
@@ -222,7 +223,7 @@ void *fctThRequete(void *p)
 				pthread_mutex_lock(&mutexMer);
 				if (tab[reqTir.L][reqTir.C] != 0) 
 				{
-					if(tab[reqTir.L][reqTir.C] >= 0)
+					if(tab[reqTir.L][reqTir.C] > 0)
 					{
 						Trace("Bateau toucher");
 						//il manque cette partie !!!! c'ets a la partie 6 la fin avec SIGUSR2
@@ -288,7 +289,7 @@ void *fctThAmiral(void *p)
 	sigset_t maskAll;
 	sigfillset(&maskAll);
 	sigprocmask(SIG_SETMASK, &maskAll,NULL);
-	
+	AfficheMer();
 	while(1)
 	{
 		pthread_mutex_lock(&mutexBateau);
@@ -331,7 +332,6 @@ void *fctThAmiral(void *p)
 		nbBateaux++;
 		pthread_create(&tid, NULL, fctThBateau, pBateau);
 		pthread_mutex_unlock(&mutexBateau);
-		
 	}
 	return NULL;
 }
@@ -382,10 +382,12 @@ void *fctThBateau(void *p)
 		pthread_exit(0);
 	}
 	DessineFullBateau(pBateau, DRAW);
-	printf("Bateau dessine !\n");
+	Trace("Bateau dessine !  %d", pthread_self()%INT_MAX);
 	
 	//unlock
 	pthread_mutex_unlock(&mutexMer);
+	
+	//AfficheMer();
 	
 	while(1)
 	{
@@ -402,7 +404,7 @@ void *fctThBateau(void *p)
 		//unlock
 		pthread_mutex_unlock(&mutexMer);
 	}
-	Trace("Fin bateau !!\n");
+	Trace("Fin bateau !!  %d", pthread_self());
 	pthread_exit(0);
 }
 
@@ -481,12 +483,12 @@ int DessineFullBateau(Bateau *pBateau, int opt)
 			if(pBateau->direction == HORIZONTAL)
 			{
 				DessineBateau(pBateau->L%NB_LIGNES, (pBateau->C+i)%NB_COLONNES, pBateau->type, HORIZONTAL,i);
-				tab[pBateau->L%NB_LIGNES][(pBateau->C+i)%NB_COLONNES] = pthread_self();
+				tab[pBateau->L%NB_LIGNES][(pBateau->C+i)%NB_COLONNES] = (int)pthread_self();
 			}
 			else
 			{
 				DessineBateau((pBateau->L+i)%NB_LIGNES, pBateau->C%NB_COLONNES, pBateau->type, VERTICAL,i);
-				tab[(pBateau->L+i)%NB_LIGNES][pBateau->C%NB_COLONNES] = pthread_self();
+				tab[(pBateau->L+i)%NB_LIGNES][pBateau->C%NB_COLONNES] = (int)pthread_self();
 			}
 		}
 	}
