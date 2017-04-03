@@ -27,6 +27,8 @@ pthread_t tidReception=0;
 
 int flagSousMarin=1;
 
+pthread_mutex_t mutexTabTir;
+
 MessageQueue  connexion;  // File de messages
 
 void *fctThEvent(void *p);
@@ -80,7 +82,8 @@ int main(int argc,char* argv[])
 		exit(1);
 	}
 	DessineBoutonSousMarin(10, 0, VERT);
-	
+	//Init mutexTabTir
+	pthread_mutex_init(&mutexTabTir,NULL);	
 
 	pthread_create(&tidEvent, NULL, fctThEvent, NULL );
 	pthread_create(&tidReception, NULL, fctReception, NULL);
