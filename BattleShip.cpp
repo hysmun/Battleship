@@ -461,13 +461,80 @@ void *fctThAmiral(void *p)
 */
 void *fctThBateau(void *p)
 {
-	sigset_t blockSet, unblockSet;
+	sigset_t blockSet, unblockSet;	
+	
 	//construction set
 	sigfillset(&blockSet);
 	sigemptyset(&unblockSet);
 	sigaddset(&unblockSet, SIGINT);
 	
+	//armement handler SIGUSR1
+	struct sigaction sigAct;
+	sigAct.sa_sigaction = HandlerSIGUSR1;
+	sigAct.sa_flags = SA_SIGINFO;
+	sigemptyset(&sigAct.sa_mask);
+	sigaction(SIGUSR1, &sigAct, NULL);
 	
+	// armement handler SIGUSR2
+	struct sigaction sigAct2;
+	sigAct2.sa_sigaction = HandlerSIGUSR2;
+	sigAct2.sa_flags = SA_SIGINFO;
+	sigemptyset(&sigAct2.sa_mask);
+	sigaction(SIGUSR2, &sigAct2, NULL);
+	
+	//Allocation place ComBateau[]
+	int BatPose = 0;
+	int Place = 0;
+	for(int i = 0;(i<NB_BATEAUX) && (BatPose != 1);i++)
+	{
+		pthread_mutex_lock(&mutexComBateau[i]);
+		if(comBateau[i].tidBateau != 0)
+		{
+			comBateau[i].tidBateau = pthread_self();
+			BatPose = 1;
+			Place = i;
+		}
+		pthread_mutex_unlock(&mutexComBateau[i]);
+	}
+	pthread_setspecific(cleComBateau,&comBateau[Place]);
+	
+	//blockSet
+	sigprocmask(SIG_SETMASK, &blockSet, NULL);
+	//lock
+	pthread_mutex_lock(&mutexMer);
+	
+	//on trouve une place + dessin
+	Bateau *pBateau = (Bateau *)p;
+	pthread_setspecific(cleBateau, (void*)pBateau);
+	
+	if(searchPosBateau(pBateau) == 0)
+	{
+		Trace("Erreur search pos bateau !!");
+		pthread_exit(0);
+	}
+	DessineFullBateau(pBateau, DRAW);
+	Trace("Bateau dessine !  %d", pthread_self()%INT_MAX);
+	
+	//unlock
+	pthread_mutex_unlock(&mutexMer);
+	
+	//AfficheMer();
+	
+	while(1)
+	{
+		
+		waitRand(1000000000, 3999999999);
+		//unblockSet
+		sigprocmask(SIG_SETMASK, &unblockSet, NULL);
+		//libre pour les signaux	
+		//blockSet
+		sigprocmask(SIG_SETMASK, &blockSet, NULL);
+		//lock
+		pthread_mutex_lock(&mutexMer);
+		deplacementBateau(pBateau);
+		//unlock
+		pthread_mutex_unlock(&mutexMer);
+	}
 	Trace("Fin bateau !!  %d", pthread_self());
 	pthread_exit(0);
 }
@@ -576,7 +643,19 @@ int DessineFullBateau(Bateau *pBateau, int opt)
 	return 1;
 }
 
+void HandlerSIGUSR1(int sig, siginfo_t *info, void *p) 
+{
+	Trace("pid emetteur : %d",info->si_pid);
+	Bateau *pBateau = (Bateau *)pthread_getspecific(cleBateau);
+	Message envois(info->si_pid, SOUSMARIN, (char *)pBateau, sizeof(Bateau));
+	connexion.SendData(envois);
+}
 
+void HandlerSIGUSR2(int sig, siginfo_t *info,void *p)
+{
+	
+	
+}
 
 
 
