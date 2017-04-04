@@ -61,6 +61,7 @@ void *fctThReception(void *p);
 void *fctThAfficheBateauCoule(void *p);
 void *fctThScore(void *p);
 void *fctThAmiral(void *p);
+void *fctThBateau(void *);
 
 int searchPosBateau(Bateau *pBateau);
 int DessineFullBateau(Bateau *pBateau, int opt);

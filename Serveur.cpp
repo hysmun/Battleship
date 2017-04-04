@@ -225,7 +225,7 @@ void *fctThRequete(void *p)
 			repTir.status = PLOUF;
 			if(pthread_mutex_trylock(&mutexCible[reqTir.L][reqTir.C]) == 0)
 			{
-				pthread_mutex_lock(&mutexCible[reqTir.L][reqTir.C])
+				pthread_mutex_lock(&mutexCible[reqTir.L][reqTir.C]);
 				waitTime(5, 0);
 				// Preparation de la reponse
 				repTir.L = reqTir.L;
@@ -239,13 +239,13 @@ void *fctThRequete(void *p)
 						int ShipFound = 0;
 						for(int i = 0;(i<NB_BATEAUX) && (ShipFound != 1);i++)
 						{
-							if(tab[reqTir.L][reqTir.C] == comBateau[i])
+							if(tab[reqTir.L][reqTir.C] == comBateau[i].tidBateau)
 							{
 								ShipFound = 1;
 								pthread_mutex_lock(&mutexComBateau[i]);
-								memcpy(comBateau[i]->Requete[comBateau[i].indEcriture],requete.getData(),sizeof(RequeteTir);
+								memcpy((void*)&comBateau[i].Requete[comBateau[i].indEcriture],requete.getData(),sizeof(RequeteTir));
 								comBateau[i].indEcriture++;
-								pthread_cond_signal(comBateau[i]->cond);
+								pthread_cond_signal(&comBateau[i].cond);
 								pthread_mutex_unlock(&mutexComBateau[i]);
 							}
 						}
