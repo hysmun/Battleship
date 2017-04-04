@@ -291,7 +291,7 @@ void *fctThReception(void *p)
 				break;
 			case TIR:
 			{
-				Trace("Reponse TIR");
+				//Trace("Reponse TIR");
 				memcpy(&tmpRepTir, requete.getData(), sizeof(ReponseTir));
 				switch(tmpRepTir.status)
 				{
@@ -404,7 +404,7 @@ void *fctThScore(void *p)
 		while(!MAJScore)
 			pthread_cond_wait(&condScore, &mutexScore);
 		//score mis a jour
-		Trace("Maj score %d", score);
+		//Trace("Maj score %d", score);
 		for(int i =0; i<3; i++)
 		{
 			EffaceCarre(10, 7+i);
@@ -413,7 +413,7 @@ void *fctThScore(void *p)
 		}
 		modulo = 100;
 		MAJScore = 0;
-		Trace("fin maj score");
+		//Trace("fin maj score");
 		pthread_mutex_unlock(&mutexScore);
 	}
 	
