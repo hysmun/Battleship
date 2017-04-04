@@ -265,8 +265,6 @@ void *fctThRequete(void *p)
 						{
 							Trace("envois signal");
 							pthread_kill(tab[reqTir.L][reqTir.C],SIGUSR2);
-							//DessineExplosion(reqTir.L,reqTir.C,ORANGE);
-							//pthread_kill(tab[reqTir.L][reqTir.C], SIGUSR2);
 							Trace("test");
 							tab[reqTir.L][reqTir.C] = -tab[reqTir.L][reqTir.C];
 						}
@@ -654,7 +652,60 @@ void HandlerSIGUSR2(int sig, siginfo_t *info,void *p)
 	}
 	else
 	{
-		
+		reponse.setType(comBateau->tidBateau);
+		reponse.setRequete(TIR);
+		repTir.L = reqTir.L;
+		repTir.C = reqTir.C;
+		repTir.status = COULE;
+		repTir.bateau = *pBateau;
+		reponse.setData((char*)&repTir,sizeof(ReponseTir));
+		connexion.SendData(reponse);
+		// Prevenir tous les autres joueurs
+		reponse.setRequete(BATEAU_COULE);
+		for(int i = 0;i<10;i++)
+		{
+			//Sauf le joueur qui a coulé le bateau
+			reponse.setType(joueurs[i]);
+			connexion.SendData(reponse);
+		}
+		waitTime(3,0);
+		for(int i = 0;i<NB_LIGNES;i++)
+		{
+			for(int j = 0;j<NB_COLONNES;i++)
+			{
+				if(tab[i][j] == tidSelf())
+				{
+					tab[i][j] = 0;
+				}
+			}
+		}
+		//Si le bateau est vertical
+		if(pBateau->direction == HORIZONTAL)
+			lignes[pBateau->L] = 0;
+		else
+			colonnes[pBateau->C] = 0;
+		comBateau->tidBateau = 0;
+		comBateau->indEcriture = 0;
+		comBateau->indLecture = 0;
+		pthread_setspecific(cleComBateau,comBateau);
+		nbBateaux--;
+		switch(pBateau->type)
+		{
+			case 2:
+				nbTorpilleurs--;
+				break;
+			case 3:
+				nbDestoyers--;
+				break;
+			case 4:
+				nbCroiseurs--;
+				break;
+			case 5:
+				nbCuirasses--;
+				break;			
+		}
+		pthread_cond_signal(&condBateaux);
+		delete(pBateau);
 	}
 	pthread_mutex_unlock(&comBateau->mutex);
 }
