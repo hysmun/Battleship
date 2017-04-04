@@ -250,17 +250,16 @@ void *fctThRequete(void *p)
 						int ShipFound = 0;
 						for( i = 0;(i<NB_BATEAUX) && (ShipFound != 1);i++)
 						{
-							Trace("test %d", i);
+							//Trace("test %d", i);
 							if(tab[reqTir.L][reqTir.C] == (int)comBateau[i].tidBateau)
 							{
 								ShipFound = 1;
 								pthread_mutex_lock(&mutexComBateau[i]);
-								Trace("Requete" );
 								comBateau[i].Requete[comBateau[i].indEcriture] = requete;
 								comBateau[i].indEcriture++;
 								pthread_cond_signal(&comBateau[i].cond);
 								pthread_mutex_unlock(&mutexComBateau[i]);
-								Trace("fin test %d", tab[reqTir.L][reqTir.C]);
+								//Trace("fin test %d", tab[reqTir.L][reqTir.C]);
 							}
 						}
 						if(ShipFound == 1)
@@ -269,7 +268,7 @@ void *fctThRequete(void *p)
 							pthread_kill(comBateau[i-1].tidBateau,SIGUSR2);
 							//DessineExplosion(reqTir.L,reqTir.C,ORANGE);
 							//pthread_kill(tab[reqTir.L][reqTir.C], SIGUSR2);
-							Trace("test");
+							//Trace("test");
 							tab[reqTir.L][reqTir.C] = -tab[reqTir.L][reqTir.C];
 						}
 						else
@@ -415,7 +414,7 @@ void *fctThBateau(void *p)
 		pthread_mutex_lock(&mutexComBateau[i]);
 		if(comBateau[i].tidBateau == 0)
 		{
-			Trace("Remplis la struc bateau %d", i);
+			//Trace("Remplis la struc bateau %d", i);
 			comBateau[i].tidBateau = pthread_self();
 			comBateau[i].indEcriture= 0;
 			comBateau[i].indLecture =0;
@@ -638,7 +637,7 @@ void HandlerSIGUSR2(int sig, siginfo_t *info,void *p)
 	ReponseTir *repTir = (ReponseTir *)malloc(sizeof(ReponseTir));
 	Bateau *pBateau = (Bateau *)pthread_getspecific(cleBateau);
 	ComBateau *comBateau = (ComBateau *)pthread_getspecific(cleComBateau);
-	Trace("Info : bateau %d    --    %d -- %d ", comBateau->tidBateau, comBateau->indLecture, comBateau->indEcriture);
+	//Trace("Info : bateau %d    --    %d -- %d ", comBateau->tidBateau, comBateau->indLecture, comBateau->indEcriture);
 	while(1)
 	{
 		pthread_mutex_lock(&comBateau->mutex);
@@ -647,7 +646,7 @@ void HandlerSIGUSR2(int sig, siginfo_t *info,void *p)
 		memcpy(&resultTir,&comBateau->Requete[comBateau->indLecture],sizeof(Message));
 		comBateau->indLecture++;
 		memcpy(&reqTir, resultTir.getData(), sizeof(RequeteTir));
-		Trace("Toucher ! envois a %d   pos %d -- %d", resultTir.getExpediteur(), reqTir.L, reqTir.C );
+		//Trace("Toucher ! envois a %d   pos %d -- %d", resultTir.getExpediteur(), reqTir.L, reqTir.C );
 		DessineExplosion(reqTir.L, reqTir.C, ORANGE);
 		if(comBateau->indEcriture != pBateau->type)
 		{
@@ -660,11 +659,11 @@ void HandlerSIGUSR2(int sig, siginfo_t *info,void *p)
 			memcpy(&repTir->bateau, pBateau, sizeof(Bateau));
 			reponse.setData((char*)repTir,sizeof(ReponseTir));
 			connexion.SendData(reponse);
-			Trace("Fin envois ");
+			//Trace("Fin envois ");
 		}
 		else
 		{
-			Trace("euh autre");
+			//Trace("euh autre");
 			break;
 		}
 		//waitTime(2, 0);
