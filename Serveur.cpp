@@ -644,12 +644,7 @@ void HandlerSIGUSR2(int sig, siginfo_t *info,void *p)
 		while(comBateau->indLecture == comBateau->indEcriture)
 			pthread_cond_wait(&comBateau->cond,&comBateau->mutex);
 		memcpy(&resultTir,&comBateau->Requete[comBateau->indLecture],sizeof(Message));
-<<<<<<< HEAD
 		comBateau->indLecture++;
-=======
-		
-		comBateau->indLecture ++;
->>>>>>> 09f2ac681a9e7cb3bb2839604c91506f52f983d1
 		memcpy(&reqTir, resultTir.getData(), sizeof(RequeteTir));
 		//Trace("Toucher ! envois a %d   pos %d -- %d", resultTir.getExpediteur(), reqTir.L, reqTir.C );
 		DessineExplosion(reqTir.L, reqTir.C, ORANGE);
