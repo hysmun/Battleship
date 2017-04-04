@@ -695,6 +695,7 @@ void HandlerSIGUSR2(int sig, siginfo_t *info,void *p)
 			}
 		}
 		waitTime(3,0);
+		Trace("fin wait");
 		for(int i = 0;i<NB_LIGNES;i++)
 		{
 			for(int j = 0;j<NB_COLONNES;i++)
