@@ -134,6 +134,7 @@ int main(int argc,char* argv[])
 	
 	//clé variable spécifique
   	pthread_key_create(&cleBateau, NULL);
+  	pthread_key_create(&cleComBateau, NULL);
 	
 	for(int i = 0; i< NB_BATEAUX; i++)
 	{
