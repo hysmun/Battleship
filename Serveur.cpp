@@ -637,13 +637,36 @@ void HandlerSIGUSR2(int sig, siginfo_t *info,void *p)
 	ComBateau *comBateau = (ComBateau *)pthread_getspecific(cleComBateau);
 	while(1)
 	{
-<<<<<<< HEAD
+		pthread_mutex_lock(&comBateau->mutex);
+		while(comBateau->indLecture == comBateau->indEcriture)
+			pthread_cond_wait(&comBateau->cond,&comBateau->mutex);
+		memcpy(&resultTir,&comBateau->Requete[comBateau->indLecture],sizeof(Message));
+		comBateau->indLecture ++;
+		memcpy(&reqTir, resultTir.getData(), sizeof(RequeteTir));
+		DessineExplosion(reqTir.L, reqTir.C, ORANGE);
+		if(comBateau->indEcriture != pBateau->type)
+		{
+			Trace("Toucher ! envois a %d", resultTir.getExpediteur());
+			reponse.setType(resultTir.getExpediteur());
+			reponse.setRequete(TIR);
+			repTir->L = reqTir.L;
+			repTir->C = reqTir.C;
+			repTir->status = TOUCHE;
+			memcpy(&repTir->bateau, pBateau, sizeof(Bateau));
+			reponse.setData((char*)repTir,sizeof(ReponseTir));
+			connexion.SendData(reponse);
+			Trace("Fin envois ");
+		}
+		else
+		{
+			Trace("euh autre");
+		}
 		reponse.setType(comBateau->tidBateau);
 		reponse.setRequete(TIR);
-		repTir.L = reqTir.L;
-		repTir.C = reqTir.C;
-		repTir.status = COULE;
-		repTir.bateau = *pBateau;
+		repTir->L = reqTir.L;
+		repTir->C = reqTir.C;
+		repTir->status = COULE;
+		repTir->bateau = *pBateau;
 		reponse.setData((char*)&repTir,sizeof(ReponseTir));
 		connexion.SendData(reponse);
 		// Prevenir tous les autres joueurs
@@ -692,33 +715,7 @@ void HandlerSIGUSR2(int sig, siginfo_t *info,void *p)
 		}
 		pthread_cond_signal(&condBateaux);
 		delete(pBateau);
-=======
-		pthread_mutex_lock(&comBateau->mutex);
-		while(comBateau->indLecture == comBateau->indEcriture)
-			pthread_cond_wait(&comBateau->cond,&comBateau->mutex);
-		memcpy(&resultTir,&comBateau->Requete[comBateau->indLecture],sizeof(Message));
-		comBateau->indLecture ++;
-		memcpy(&reqTir, resultTir.getData(), sizeof(RequeteTir));
-		DessineExplosion(reqTir.L, reqTir.C, ORANGE);
-		if(comBateau->indEcriture != pBateau->type)
-		{
-			Trace("Toucher ! envois a %d", resultTir.getExpediteur());
-			reponse.setType(resultTir.getExpediteur());
-			reponse.setRequete(TIR);
-			repTir->L = reqTir.L;
-			repTir->C = reqTir.C;
-			repTir->status = TOUCHE;
-			memcpy(&repTir->bateau, pBateau, sizeof(Bateau));
-			reponse.setData((char*)repTir,sizeof(ReponseTir));
-			connexion.SendData(reponse);
-			Trace("Fin envois ");
-		}
-		else
-		{
-			Trace("euh autre");
-		}
 		pthread_mutex_unlock(&comBateau->mutex);
->>>>>>> f7e96db6634193ce6932fbba21483404cfe534d7
 	}
 }
 
