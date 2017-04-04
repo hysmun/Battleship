@@ -39,7 +39,7 @@ struct ReponseTir
 
 struct ComBateau 
 {
-	int tidBateau ;// Identifiant du bateau qui utilise cette structure
+	pthread_t tidBateau ;// Identifiant du bateau qui utilise cette structure
 	Message Requete[5] ; // Requetes transmises par les threads Requete
 	int indEcriture ; // indice où doit écrire un Thread Requete
 	int indLecture ; // indice où doit lire le thread Bateau

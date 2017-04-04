@@ -240,6 +240,7 @@ void *fctThRequete(void *p)
 				// Preparation de la reponse
 				repTir.L = reqTir.L;
 				repTir.C = reqTir.C;
+				int i;
 				pthread_mutex_lock(&mutexMer);
 				if (tab[reqTir.L][reqTir.C] != 0) 
 				{
@@ -247,10 +248,10 @@ void *fctThRequete(void *p)
 					{
 						Trace("Bateau touche");
 						int ShipFound = 0;
-						for(int i = 0;(i<NB_BATEAUX) && (ShipFound != 1);i++)
+						for( i = 0;(i<NB_BATEAUX) && (ShipFound != 1);i++)
 						{
 							Trace("test %d", i);
-							if(tab[reqTir.L][reqTir.C] == comBateau[i].tidBateau)
+							if(tab[reqTir.L][reqTir.C] == (int)comBateau[i].tidBateau)
 							{
 								ShipFound = 1;
 								pthread_mutex_lock(&mutexComBateau[i]);
@@ -263,8 +264,8 @@ void *fctThRequete(void *p)
 						}
 						if(ShipFound == 1)
 						{
-							Trace("envois signal");
-							pthread_kill(tab[reqTir.L][reqTir.C],SIGUSR2);
+							Trace("envois signal  %d", comBateau[i-1].tidBateau);
+							pthread_kill(comBateau[i-1].tidBateau,SIGUSR2);
 							//DessineExplosion(reqTir.L,reqTir.C,ORANGE);
 							//pthread_kill(tab[reqTir.L][reqTir.C], SIGUSR2);
 							Trace("test");
@@ -631,32 +632,37 @@ void HandlerSIGUSR2(int sig, siginfo_t *info,void *p)
 	Trace("Entree SIGUSR2");
 	Message resultTir,reponse;
 	RequeteTir reqTir;
-	ReponseTir repTir;
+	ReponseTir *repTir = (ReponseTir *)malloc(sizeof(ReponseTir));
 	Bateau *pBateau = (Bateau *)pthread_getspecific(cleBateau);
 	ComBateau *comBateau = (ComBateau *)pthread_getspecific(cleComBateau);
-	pthread_mutex_lock(&comBateau->mutex);
-	while(comBateau->indLecture == comBateau->indEcriture)
-		pthread_cond_wait(&comBateau->cond,&comBateau->mutex);
-	memcpy(&resultTir,&comBateau->Requete[comBateau->indLecture],sizeof(Message));
-	comBateau->indLecture ++;
-	memcpy(&reqTir, resultTir.getData(), sizeof(RequeteTir));
-	DessineExplosion(reqTir.L, reqTir.C, ORANGE);
-	if(comBateau->indEcriture != pBateau->type)
+	while(1)
 	{
-		reponse.setType(comBateau->tidBateau);
-		reponse.setRequete(TIR);
-		repTir.L = reqTir.L;
-		repTir.C = reqTir.C;
-		repTir.status = TOUCHE;
-		repTir.bateau = *pBateau;
-		reponse.setData((char*)&repTir,sizeof(ReponseTir));
-		connexion.SendData(reponse);
+		pthread_mutex_lock(&comBateau->mutex);
+		while(comBateau->indLecture == comBateau->indEcriture)
+			pthread_cond_wait(&comBateau->cond,&comBateau->mutex);
+		memcpy(&resultTir,&comBateau->Requete[comBateau->indLecture],sizeof(Message));
+		comBateau->indLecture ++;
+		memcpy(&reqTir, resultTir.getData(), sizeof(RequeteTir));
+		DessineExplosion(reqTir.L, reqTir.C, ORANGE);
+		if(comBateau->indEcriture != pBateau->type)
+		{
+			Trace("Toucher ! envois a %d", resultTir.getExpediteur());
+			reponse.setType(resultTir.getExpediteur());
+			reponse.setRequete(TIR);
+			repTir->L = reqTir.L;
+			repTir->C = reqTir.C;
+			repTir->status = TOUCHE;
+			memcpy(&repTir->bateau, pBateau, sizeof(Bateau));
+			reponse.setData((char*)repTir,sizeof(ReponseTir));
+			connexion.SendData(reponse);
+			Trace("Fin envois ");
+		}
+		else
+		{
+			Trace("euh autre");
+		}
+		pthread_mutex_unlock(&comBateau->mutex);
 	}
-	else
-	{
-		
-	}
-	pthread_mutex_unlock(&comBateau->mutex);
 }
 
 void AfficheMer(void)

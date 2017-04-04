@@ -7,7 +7,7 @@ int waitTime(int sec, long nsec);
 
 int waitRand(long min, long max);
 
-unsigned int tidSelf();
+pthread_t tidSelf();
 
 
 
