@@ -17,9 +17,18 @@
 #define NB_LIGNES			10
 #define NB_COLONNES 		10
 
+#define NB_CROISEURS 2
+#define NB_DESTOYERS 3
+#define NB_CUIRASSES 1
+#define NB_TORPILLEURS 4
+
+#define NB_BATEAUX (NB_CROISEURS + NB_CUIRASSES + NB_DESTOYERS + NB_TORPILLEURS)
+
 // Tableau de jeu (mer)
-int   tab[NB_LIGNES][NB_COLONNES]={{0}};
-int   tabTir[NB_LIGNES][NB_COLONNES]={{0}};
+int tab[NB_LIGNES][NB_COLONNES]={{0}};
+int tabTir[NB_LIGNES][NB_COLONNES]={{0}};
+int lignes[NB_LIGNES]={0};
+int colonnes[NB_COLONNES]={0};
 
 pid_t pidServeur = 0;
 pid_t pid=getpid();
@@ -27,11 +36,19 @@ pthread_t tidEvent=0;
 pthread_t tidReception=0;
 pthread_t tidScore = 0;
 
+pthread_t tidAmiral;
+pthread_t tid;
+int nbCuirasses=0, nbCroiseurs=0, nbDestoyers=0, nbTorpilleurs=0;
+int nbBateaux=0;
+int nbVerticaux =0, nbHozizontaux=0;
+
 int flagSousMarin=1;
 
 pthread_mutex_t mutexTabTir;
 pthread_mutex_t mutexScore;
 pthread_cond_t condScore;
+pthread_mutex_t mutexBateau;
+pthread_cond_t condBateaux;
 
 int score = 0;
 int MAJScore = 1;
@@ -43,9 +60,11 @@ void *fctThAffBateau(void *p);
 void *fctThReception(void *p);
 void *fctThAfficheBateauCoule(void *p);
 void *fctThScore(void *p);
+void *fctThAmiral(void *p);
 
+int searchPosBateau(Bateau *pBateau);
 int DessineFullBateau(Bateau *pBateau, int opt);
-
+int deplacementBateau(Bateau *pBateau);
 
 
 
@@ -371,6 +390,152 @@ void *fctThScore(void *p)
 	pthread_exit(0);
 }
 
+/*
+*
+*			fctThAmiral
+*
+*/
+void *fctThAmiral(void *p)
+{
+	Bateau *pBateau;
+	
+	// Bloquer tous les signaux
+	sigset_t maskAll;
+	sigfillset(&maskAll);
+	sigprocmask(SIG_SETMASK, &maskAll,NULL);
+	
+	
+	pthread_mutex_lock(&mutexBateau);
+	while(nbBateaux > NB_BATEAUX)
+	{
+		Trace("Amiral cree un bateau !");
+		pBateau = (Bateau *)malloc(sizeof(Bateau));
+		if(nbCroiseurs < NB_CROISEURS)
+		{
+			pBateau->type = CROISEUR;
+			nbCroiseurs++;
+		}
+		else if(nbCuirasses < NB_CUIRASSES)
+		{
+			pBateau->type = CUIRASSE;
+			nbCuirasses++;
+		}
+		else if(nbDestoyers < NB_DESTOYERS)
+		{
+			pBateau->type = DESTROYER;
+			nbDestoyers++;
+		}
+		else if(nbTorpilleurs < NB_TORPILLEURS)
+		{
+			pBateau->type = TORPILLEUR;
+			nbTorpilleurs++;
+		}
+		
+		if(nbVerticaux > nbHozizontaux)
+		{
+			pBateau->direction = HORIZONTAL;
+			nbHozizontaux++;
+		}
+		else
+		{
+			pBateau->direction = VERTICAL;
+			nbVerticaux++;
+		}
+		nbBateaux++;
+		pthread_create(&tid, NULL, fctThBateau, pBateau);
+		pthread_mutex_unlock(&mutexBateau);
+	}
+	
+	pthread_mutex_lock(&mutexBateau);
+	while(nbBateaux > 0)
+		pthread_cond_wait(&condBateaux, &mutexBateau);
+		
+	return NULL;
+}
+
+/*
+*
+*			fctThBateau
+*
+*/
+void *fctThBateau(void *p)
+{
+	sigset_t blockSet, unblockSet;
+	//construction set
+	sigfillset(&blockSet);
+	sigemptyset(&unblockSet);
+	sigaddset(&unblockSet, SIGINT);
+	
+	
+	Trace("Fin bateau !!  %d", pthread_self());
+	pthread_exit(0);
+}
+
+int searchPosBateau(Bateau *pBateau)
+{
+	if(pBateau == NULL)
+	{
+		Trace("Erreur param searchBateau");
+		pthread_exit(0);
+	}
+	int posOK=0;
+	for(int i=0; i<NB_LIGNES*NB_COLONNES; i++)
+	{
+		if(pBateau->direction == HORIZONTAL)
+		{
+			//bateau horizontal
+			if(i%NB_COLONNES == 0)
+				posOK =0;
+			if(tab[i/NB_LIGNES][i%NB_COLONNES] == 0)
+			{
+				posOK++;
+			}
+			else
+			{
+				posOK=0;
+			}
+			if(lignes[i/NB_LIGNES] != 0)
+			{
+				posOK=0;
+			}
+			if(posOK == pBateau->type)
+			{
+				pBateau->L = (i/NB_LIGNES);
+				pBateau->C = (i%NB_COLONNES)-(pBateau->type-1);
+				lignes[i/NB_LIGNES] = 1;
+				pBateau->sens = DROITE;
+				i = NB_COLONNES*NB_LIGNES;
+			}
+		}
+		else
+		{
+			//bateau vertical
+			if(i%NB_LIGNES == 0)
+				posOK =0;
+			if(tab[i%NB_LIGNES][i/NB_COLONNES] == 0)
+			{
+				posOK++;
+			}
+			else
+			{
+				posOK=0;
+			}
+			if(colonnes[i/NB_COLONNES] != 0)
+			{
+				posOK =0;
+			}
+			if(posOK == pBateau->type)
+			{
+				pBateau->L = (i%NB_LIGNES)-(pBateau->type-1);
+				pBateau->C = i/NB_COLONNES;
+				colonnes[i/NB_COLONNES] = 1;
+				pBateau->sens = BAS;
+				i = NB_COLONNES*NB_LIGNES;
+			}
+		}
+	}
+	return posOK;
+}
 
 int DessineFullBateau(Bateau *pBateau, int opt)
 {
