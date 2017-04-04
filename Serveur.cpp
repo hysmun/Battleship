@@ -634,90 +634,91 @@ void HandlerSIGUSR2(int sig, siginfo_t *info,void *p)
 {
 	try
 	{
-	Trace("Entree SIGUSR2 je suis %d", pthread_self());
-	Message resultTir,reponse;
-	RequeteTir reqTir;
-	ReponseTir *repTir = (ReponseTir *)malloc(sizeof(ReponseTir));
-	Bateau *pBateau = (Bateau *)pthread_getspecific(cleBateau);
-	ComBateau *comBateau = (ComBateau *)pthread_getspecific(cleComBateau);
-	//Trace("Info : bateau %d    --    %d -- %d ", comBateau->tidBateau, comBateau->indLecture, comBateau->indEcriture);
-	while(1)
-	{
-		pthread_mutex_lock(&comBateau->mutex);
-		while(comBateau->indLecture == comBateau->indEcriture)
-		pthread_cond_wait(&comBateau->cond,&comBateau->mutex);
-		//memcpy(&resultTir,&comBateau->Requete[comBateau->indLecture],sizeof(Message));
-		resultTir = comBateau->Requete[comBateau->indLecture];
-		comBateau->indLecture ++;
-		memcpy(&reqTir, resultTir.getData(), sizeof(RequeteTir));
-		//Trace("Toucher ! envois a %d   pos %d -- %d", resultTir.getExpediteur(), reqTir.L, reqTir.C );
-		DessineExplosion(reqTir.L, reqTir.C, ORANGE);
-		if(comBateau->indEcriture != pBateau->type)
+		Trace("Entree SIGUSR2 je suis %d", pthread_self());
+		Message resultTir,reponse;
+		RequeteTir reqTir;
+		ReponseTir *repTir = (ReponseTir *)malloc(sizeof(ReponseTir));
+		Bateau *pBateau = (Bateau *)pthread_getspecific(cleBateau);
+		ComBateau *comBateau = (ComBateau *)pthread_getspecific(cleComBateau);
+		//Trace("Info : bateau %d    --    %d -- %d ", comBateau->tidBateau, comBateau->indLecture, comBateau->indEcriture);
+		while(1)
 		{
+			pthread_mutex_lock(&comBateau->mutex);
+			while(comBateau->indLecture == comBateau->indEcriture)
+			pthread_cond_wait(&comBateau->cond,&comBateau->mutex);
+			//memcpy(&resultTir,&comBateau->Requete[comBateau->indLecture],sizeof(Message));
+			resultTir = comBateau->Requete[comBateau->indLecture];
+			comBateau->indLecture ++;
+			memcpy(&reqTir, resultTir.getData(), sizeof(RequeteTir));
+			//Trace("Toucher ! envois a %d   pos %d -- %d", resultTir.getExpediteur(), reqTir.L, reqTir.C );
+			DessineExplosion(reqTir.L, reqTir.C, ORANGE);
+			if(comBateau->indEcriture != pBateau->type)
+			{
 			
-			reponse.setType(resultTir.getExpediteur());
-			reponse.setRequete(TIR);
-			repTir->L = reqTir.L;
-			repTir->C = reqTir.C;
-			repTir->status = TOUCHE;
-			memcpy(&repTir->bateau, pBateau, sizeof(Bateau));
-			reponse.setData((char*)repTir,sizeof(ReponseTir));
-			connexion.SendData(reponse);
-			//Trace("Fin envois ");
-		}
-		else
-		{
-			Trace("Badaboum");
-			reponse.setRequete(BATEAU_COULE);
-			for(int i = 0;i<10;i++)
-			{
-				//Sauf le joueur qui a coulé le bateau
-				if((joueurs[i] != 0) && (joueurs[i] != resultTir.getExpediteur()))
-				{
-					reponse.setType(joueurs[i]);
-					connexion.SendData(reponse);
-				}
+				reponse.setType(resultTir.getExpediteur());
+				reponse.setRequete(TIR);
+				repTir->L = reqTir.L;
+				repTir->C = reqTir.C;
+				repTir->status = TOUCHE;
+				memcpy(&repTir->bateau, pBateau, sizeof(Bateau));
+				reponse.setData((char*)repTir,sizeof(ReponseTir));
+				connexion.SendData(reponse);
+				//Trace("Fin envois ");
 			}
-			for(int i = 0;i<NB_LIGNES;i++)
+			else
 			{
-				for(int j = 0;j<NB_COLONNES;i++)
+				Trace("Badaboum");
+				reponse.setRequete(BATEAU_COULE);
+				for(int i = 0;i<10;i++)
 				{
-					if(tab[i][j] == (int)pthread_self())
+					//Sauf le joueur qui a coulé le bateau
+					if((joueurs[i] != 0) && (joueurs[i] != resultTir.getExpediteur()))
 					{
-						tab[i][j] = 0;
+						reponse.setType(joueurs[i]);
+						connexion.SendData(reponse);
 					}
 				}
+				for(int i = 0;i<NB_LIGNES;i++)
+				{
+					for(int j = 0;j<NB_COLONNES;i++)
+					{
+						if(tab[i][j] == (int)pthread_self())
+						{
+							tab[i][j] = 0;
+						}
+					}
+				}
+				//Si le bateau est vertical
+				if(pBateau->direction == HORIZONTAL)
+					lignes[pBateau->L] = 0;
+				else
+					colonnes[pBateau->C] = 0;
+				comBateau->tidBateau = 0;
+				comBateau->indEcriture = 0;
+				comBateau->indLecture = 0;
+				pthread_setspecific(cleComBateau,comBateau);
+				nbBateaux--;
+				switch(pBateau->type)
+				{
+					case 2:
+						nbTorpilleurs--;
+						break;
+					case 3:
+						nbDestoyers--;
+						break;
+					case 4:
+						nbCroiseurs--;
+						break;
+					case 5:
+						nbCuirasses--;
+						break;			
+				}
+				pthread_mutex_unlock(&comBateau->mutex);
+				pthread_cond_signal(&condBateaux);
+				break;
 			}
-			//Si le bateau est vertical
-			if(pBateau->direction == HORIZONTAL)
-				lignes[pBateau->L] = 0;
-			else
-				colonnes[pBateau->C] = 0;
-			comBateau->tidBateau = 0;
-			comBateau->indEcriture = 0;
-			comBateau->indLecture = 0;
-			pthread_setspecific(cleComBateau,comBateau);
-			nbBateaux--;
-			switch(pBateau->type)
-			{
-				case 2:
-					nbTorpilleurs--;
-					break;
-				case 3:
-					nbDestoyers--;
-					break;
-				case 4:
-					nbCroiseurs--;
-					break;
-				case 5:
-					nbCuirasses--;
-					break;			
-			}
-			pthread_mutex_unlock(&comBateau->mutex);
-			pthread_cond_signal(&condBateaux);
-			break;
+			free(pBateau);
 		}
-		free(pBateau);
 	}
 	catch(MessageQueueException e)
 	{
