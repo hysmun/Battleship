@@ -144,17 +144,17 @@ void *fctThEvent(void *p)
 				pthread_cond_signal(&condScore);
 				if(event.ligne > 10)
 				{
-					Trace("demande de tir !\n");
+					Trace("Demande de tir !\n");
 					pthread_mutex_lock(&mutexTabTir);
 					if(tabTir[event.ligne-11][event.colonne] != 0)
 					{
 						//on essaye deja de tirer ici
-						Trace("Position deja verouiller");
+						Trace("Position deja verrouillee");
 					}
 					else
 					{
 						//on peut tirer ici 
-						Trace("Position verouiller");
+						Trace("Position verrouillee");
 						tabTir[event.ligne-11][event.colonne] = 1;
 						DessineCible(event.ligne, event.colonne);
 						RequeteTir reqTir;
