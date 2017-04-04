@@ -37,6 +37,7 @@ int DessineFullBateau(Bateau *pBateau, int opt);
 int deplacementBateau(Bateau *pBateau);
 void HandlerSIGUSR1(int sig, siginfo_t *info, void *p);
 void HandlerSIGUSR1(int sig);
+void HandlerSIGUSR2(int sig, siginfo_t *info, void *p);
 void AfficheMer(void);
 
 // Tableau de jeu (mer)
@@ -55,8 +56,11 @@ pid_t joueurs[10]={0};
 pthread_mutex_t mutexMer;
 pthread_mutex_t mutexBateau;
 pthread_mutex_t mutexJoueurs;
+pthread_mutex_t mutexComBateau[NB_BATEAUX];
 pthread_cond_t condBateaux;
 pthread_key_t cleBateau;
+pthread_key_t cleComBateau;
+
 pthread_mutex_t mutexCible[NB_LIGNES][NB_COLONNES];
 
 ComBateau comBateau[NB_BATEAUX];
@@ -100,6 +104,11 @@ int main(int argc,char* argv[])
 	pthread_mutex_init(&mutexBateau, NULL);
 	pthread_mutex_init(&mutexJoueurs, NULL);
 	pthread_cond_init(&condBateaux, NULL);
+	
+	for(int i = 0; i< NB_BATEAUX; i++)
+	{
+		pthread_mutex_init(&mutexComBateau[i], NULL);
+	}
 	
 	for(int i = 0; i< NB_LIGNES; i++)
 	{
@@ -216,6 +225,7 @@ void *fctThRequete(void *p)
 			repTir.status = PLOUF;
 			if(pthread_mutex_trylock(&mutexCible[reqTir.L][reqTir.C]) == 0)
 			{
+				pthread_mutex_lock(&mutexCible[reqTir.L][reqTir.C])
 				waitTime(5, 0);
 				// Preparation de la reponse
 				repTir.L = reqTir.L;
@@ -225,17 +235,21 @@ void *fctThRequete(void *p)
 				{
 					if(tab[reqTir.L][reqTir.C] > 0)
 					{
-						Trace("Bateau toucher");
-						//il manque cette partie !!!! c'ets a la partie 6 la fin avec SIGUSR2
-						/********************************************************************
-						*								A FAIRE
-						*											A FAIRE
-						*																	A FAIRE
-						*					A   FAIRE
-						*														A FAIRE
-						*******************************************************************
-						*/
-						repTir.status = TOUCHE;
+						Trace("Bateau touche");
+						int ShipFound = 0;
+						for(int i = 0;(i<NB_BATEAUX) && (ShipFound != 1);i++)
+						{
+							if(tab[reqTir.L][reqTir.C] == comBateau[i])
+							{
+								ShipFound = 1;
+								pthread_mutex_lock(&mutexComBateau[i]);
+								memcpy(comBateau[i]->Requete[comBateau[i].indEcriture],requete.getData(),sizeof(RequeteTir);
+								comBateau[i].indEcriture++;
+								pthread_cond_signal(comBateau[i]->cond);
+								pthread_mutex_unlock(&mutexComBateau[i]);
+							}
+						}
+						pthread_kill(tab[reqTir.L][reqTir.C],SIGUSR2);
 						//DessineExplosion(reqTir.L,reqTir.C,ORANGE);
 						//pthread_kill(tab[reqTir.L][reqTir.C], SIGUSR2);
 						tab[reqTir.L][reqTir.C] = -tab[reqTir.L][reqTir.C];
@@ -261,7 +275,7 @@ void *fctThRequete(void *p)
 				repTir.C = reqTir.C;
 				repTir.status = LOCKED;
 			}
-			
+			pthread_mutex_unlock(&mutexCible[reqTir.L][reqTir.C]);
 			
 			reponse.setData((char*)&repTir,sizeof(ReponseTir)); // Charge utile du message
 			// Envoi de la reponse
@@ -344,13 +358,14 @@ void *fctThAmiral(void *p)
 */
 void *fctThBateau(void *p)
 {
-	sigset_t blockSet, unblockSet;
+	sigset_t blockSet, unblockSet;	
+	
 	//construction set
 	sigfillset(&blockSet);
 	sigemptyset(&unblockSet);
 	sigaddset(&unblockSet, SIGINT);
 	
-	//armement handler
+	//armement handler SIGUSR1
 	struct sigaction sigAct;
 	sigAct.sa_sigaction = HandlerSIGUSR1;
 	sigAct.sa_flags = SA_SIGINFO;
@@ -358,14 +373,27 @@ void *fctThBateau(void *p)
 	sigaction(SIGUSR1, &sigAct, NULL);
 	
 	// armement handler SIGUSR2
-	sigAct.sa_sigaction = HandlerSIGUSR1;
-	sigAct.sa_flags = 0;
-	sigemptyset(&sigAct.sa_mask);
-	sigaction(SIGUSR1, &sigAct, NULL);
+	struct sigaction sigAct2;
+	sigAct2.sa_sigaction = HandlerSIGUSR2;
+	sigAct2.sa_flags = SA_SIGINFO;
+	sigemptyset(&sigAct2.sa_mask);
+	sigaction(SIGUSR2, &sigAct2, NULL);
 	
-	
-	
-	
+	//Allocation place ComBateau[]
+	int BatPose = 0;
+	int Place = 0;
+	for(int i = 0;(i<NB_BATEAUX) && (BatPose != 1);i++)
+	{
+		pthread_mutex_lock(&mutexComBateau[i]);
+		if(comBateau[i].tidBateau != 0)
+		{
+			comBateau[i].tidBateau = pthread_self();
+			BatPose = 1;
+			Place = i;
+		}
+		pthread_mutex_unlock(&mutexComBateau[i]);
+	}
+	pthread_setspecific(cleComBateau,&comBateau[Place]);
 	
 	//blockSet
 	sigprocmask(SIG_SETMASK, &blockSet, NULL);
@@ -567,9 +595,10 @@ void HandlerSIGUSR1(int sig, siginfo_t *info, void *p)
 	connexion.SendData(envois);
 }
 
-void HandlerSIGUSR2(int sig)
+void HandlerSIGUSR2(int sig, siginfo_t *info,void *p)
 {
-	return;
+	
+	
 }
 
 void AfficheMer(void)
