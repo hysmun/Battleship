@@ -106,6 +106,7 @@ int main(int argc,char* argv[])
   	
   	//clé variable spécifique
   	pthread_key_create(&cleBateau, NULL);
+  	pthread_key_create(&cleComBateau, NULL);
   
   // creation mutex et variable condition
 	pthread_mutex_init(&mutexMer, NULL);
