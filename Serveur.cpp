@@ -688,7 +688,6 @@ void HandlerSIGUSR2(int sig, siginfo_t *info,void *p)
 		for(int i = 0;i<10;i++)
 		{
 			//Sauf le joueur qui a coulé le bateau
-
 			if((joueurs[i] != 0) && (joueurs[i] != resultTir.getExpediteur()))
 			{
 				reponse.setType(joueurs[i]);
