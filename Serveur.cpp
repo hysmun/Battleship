@@ -638,7 +638,7 @@ void HandlerSIGUSR2(int sig, siginfo_t *info,void *p)
 	}
 	else
 	{
-	
+		
 	}
 	pthread_mutex_unlock(&comBateau->mutex);
 }
