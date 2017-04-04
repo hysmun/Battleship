@@ -256,7 +256,7 @@ void *fctThRequete(void *p)
 								ShipFound = 1;
 								pthread_mutex_lock(&mutexComBateau[i]);
 								Trace("Requete" );
-								memcpy(&(comBateau[i].Requete[comBateau[i].indEcriture]),&requete,sizeof(Message));
+								memcpy(comBateau[i].Requete[comBateau[i].indEcriture],&requete,sizeof(Message));
 								comBateau[i].indEcriture++;
 								pthread_cond_signal(&comBateau[i].cond);
 								pthread_mutex_unlock(&mutexComBateau[i]);
@@ -645,7 +645,7 @@ void HandlerSIGUSR2(int sig, siginfo_t *info,void *p)
 		while(comBateau->indLecture == comBateau->indEcriture)
 			pthread_cond_wait(&comBateau->cond,&comBateau->mutex);
 		memcpy(&resultTir,&comBateau->Requete[comBateau->indLecture],sizeof(Message));
-		comBateau->indLecture ++;
+		comBateau->indLecture++;
 		memcpy(&reqTir, resultTir.getData(), sizeof(RequeteTir));
 		Trace("Toucher ! envois a %d   pos %d -- %d", resultTir.getExpediteur(), reqTir.L, reqTir.C );
 		DessineExplosion(reqTir.L, reqTir.C, ORANGE);
