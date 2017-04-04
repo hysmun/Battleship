@@ -256,7 +256,7 @@ void *fctThRequete(void *p)
 								ShipFound = 1;
 								pthread_mutex_lock(&mutexComBateau[i]);
 								Trace("Requete" );
-								memcpy(comBateau[i].Requete[comBateau[i].indEcriture],&requete,sizeof(Message));
+								comBateau[i].Requete[comBateau[i].indEcriture] = requete;
 								comBateau[i].indEcriture++;
 								pthread_cond_signal(&comBateau[i].cond);
 								pthread_mutex_unlock(&mutexComBateau[i]);
