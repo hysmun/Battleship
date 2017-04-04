@@ -196,7 +196,7 @@ void *fctThRequete(void *p)
 			pthread_mutex_lock(&mutexJoueurs);
 			for(int i = 0;i<10;i++)
 			{
-				if(joueurs[i] != 0)
+				if(joueurs[i] == 0)
 				{
 					joueurs[i] = requete.getExpediteur();
 					i = 10;
@@ -214,7 +214,7 @@ void *fctThRequete(void *p)
 			pthread_mutex_lock(&mutexJoueurs);
 			for(int i = 0;i<10;i++)
 			{
-				if(joueurs[i] != requete.getExpediteur())
+				if(joueurs[i] == requete.getExpediteur())
 				{
 					joueurs[i] = 0;
 					i = 10;
@@ -663,6 +663,7 @@ void HandlerSIGUSR2(int sig, siginfo_t *info,void *p)
 				memcpy(&repTir->bateau, pBateau, sizeof(Bateau));
 				reponse.setData((char*)repTir,sizeof(ReponseTir));
 				connexion.SendData(reponse);
+				pthread_mutex_unlock(&comBateau->mutex);
 				//Trace("Fin envois ");
 			}
 			else
@@ -678,9 +679,10 @@ void HandlerSIGUSR2(int sig, siginfo_t *info,void *p)
 						connexion.SendData(reponse);
 					}
 				}
+				waitTime(3,0);
 				for(int i = 0;i<NB_LIGNES;i++)
 				{
-					for(int j = 0;j<NB_COLONNES;i++)
+					for(int j = 0;j<NB_COLONNES;j++)
 					{
 						if(tab[i][j] == (int)pthread_self())
 						{
@@ -700,16 +702,16 @@ void HandlerSIGUSR2(int sig, siginfo_t *info,void *p)
 				nbBateaux--;
 				switch(pBateau->type)
 				{
-					case 2:
+					case TORPILLEUR:
 						nbTorpilleurs--;
 						break;
-					case 3:
+					case DESTROYER:
 						nbDestoyers--;
 						break;
-					case 4:
+					case CROISEUR:
 						nbCroiseurs--;
 						break;
-					case 5:
+					case CUIRASSE:
 						nbCuirasses--;
 						break;			
 				}
@@ -717,8 +719,8 @@ void HandlerSIGUSR2(int sig, siginfo_t *info,void *p)
 				pthread_cond_signal(&condBateaux);
 				break;
 			}
-			free(pBateau);
 		}
+		free(pBateau);
 	}
 	catch(MessageQueueException e)
 	{
