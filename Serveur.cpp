@@ -275,8 +275,8 @@ void *fctThRequete(void *p)
 						{
 							Trace("ERREUR !!");
 						}
-						Trace("fin bateau tir");
-						Trace("Fin requete");
+						//Trace("fin bateau tir");
+						//Trace("Fin requete");
 						//pthread_exit(0);
 					}
 					else
@@ -642,9 +642,10 @@ void HandlerSIGUSR2(int sig, siginfo_t *info,void *p)
 	{
 		pthread_mutex_lock(&comBateau->mutex);
 		while(comBateau->indLecture == comBateau->indEcriture)
-			pthread_cond_wait(&comBateau->cond,&comBateau->mutex);
-		memcpy(&resultTir,&comBateau->Requete[comBateau->indLecture],sizeof(Message));
-		comBateau->indLecture++;
+		pthread_cond_wait(&comBateau->cond,&comBateau->mutex);
+		//memcpy(&resultTir,&comBateau->Requete[comBateau->indLecture],sizeof(Message));
+		resultTir = comBateau->Requete[comBateau->indLecture];
+		comBateau->indLecture ++;
 		memcpy(&reqTir, resultTir.getData(), sizeof(RequeteTir));
 		//Trace("Toucher ! envois a %d   pos %d -- %d", resultTir.getExpediteur(), reqTir.L, reqTir.C );
 		DessineExplosion(reqTir.L, reqTir.C, ORANGE);
