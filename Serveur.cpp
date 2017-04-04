@@ -401,6 +401,8 @@ void *fctThBateau(void *p)
 			comBateau[i].tidBateau = tidSelf();
 			comBateau[i].indEcriture= 0;
 			comBateau[i].indLecture =0;
+			pthread_mutex_init(&comBateau[i].mutex, NULL);
+			pthread_cond_init(&comBateau[i].cond, NULL);
 			BatPose = 1;
 			Place = i;
 		}
