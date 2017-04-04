@@ -607,6 +607,7 @@ void HandlerSIGUSR1(int sig, siginfo_t *info, void *p)
 
 void HandlerSIGUSR2(int sig, siginfo_t *info,void *p)
 {
+	Trace("Entree SIGUSR2");
 	Message resultTir;
 	RequeteTir reqTir;
 	Bateau *pBateau = (Bateau *)pthread_getspecific(cleBateau);
@@ -618,6 +619,7 @@ void HandlerSIGUSR2(int sig, siginfo_t *info,void *p)
 	comBateau->indLecture ++;
 	memcpy(&reqTir, resultTir.getData(), sizeof(RequeteTir));
 	DessineExplosion(reqTir.L, reqTir.C, ORANGE);
+	if()
 	
 	
 	pthread_mutex_unlock(&comBateau->mutex);
