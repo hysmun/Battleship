@@ -717,7 +717,7 @@ void HandlerSIGUSR2(int sig, siginfo_t *info,void *p)
 			pthread_cond_signal(&condBateaux);
 			break;
 		}
-		delete(pBateau);
+		free(pBateau);
 	}
 	catch(MessageQueueException e)
 	{
