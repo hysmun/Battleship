@@ -255,8 +255,6 @@ void *fctThRequete(void *p)
 							{
 								ShipFound = 1;
 								pthread_mutex_lock(&mutexComBateau[i]);
-								//Trace("Requete" );
-								//memcpy(&(comBateau[i].Requete[comBateau[i].indEcriture]),&requete,sizeof(Message));
 								comBateau[i].Requete[comBateau[i].indEcriture] = requete;
 								comBateau[i].indEcriture++;
 								
@@ -647,7 +645,7 @@ void HandlerSIGUSR2(int sig, siginfo_t *info,void *p)
 	{
 		pthread_mutex_lock(&comBateau->mutex);
 		while(comBateau->indLecture == comBateau->indEcriture)
-			pthread_cond_wait(&comBateau->cond,&comBateau->mutex);
+		pthread_cond_wait(&comBateau->cond,&comBateau->mutex);
 		//memcpy(&resultTir,&comBateau->Requete[comBateau->indLecture],sizeof(Message));
 		resultTir = comBateau->Requete[comBateau->indLecture];
 		comBateau->indLecture ++;
@@ -687,12 +685,16 @@ void HandlerSIGUSR2(int sig, siginfo_t *info,void *p)
 		connexion.SendData(reponse);
 		// Prevenir tous les autres joueurs
 		reponse.setRequete(BATEAU_COULE);
-		/*for(int i = 0;i<10;i++)
+		for(int i = 0;i<10;i++)
 		{
 			//Sauf le joueur qui a coulé le bateau
-			reponse.setType(joueurs[i]);
-			connexion.SendData(reponse);
-		}*/
+
+			if((joueurs[i] != 0) && (joueurs[i] != resultTir.getExpediteur()))
+			{
+				reponse.setType(joueurs[i]);
+				connexion.SendData(reponse);
+			}
+		}
 		waitTime(3,0);
 		Trace("fin wait");
 		for(int i = 0;i<NB_LIGNES;i++)
