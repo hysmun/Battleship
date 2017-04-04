@@ -2,6 +2,7 @@
 #include <signal.h>
 #include <pthread.h>
 #include <time.h>
+#include <limits.h>
 #include "Ecran.h"
 #include "GrilleSDL.h"
 #include "Ressources.h"
@@ -31,7 +32,10 @@ int waitRand(long min, long max)
 	return waitTime(number/1000000000, number%1000000000);
 }
 
-
+int tidSelf()
+{
+	return pthread_self()%INT_MAX;
+}
 
 
 

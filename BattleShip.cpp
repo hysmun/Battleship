@@ -5,6 +5,7 @@
 #include <signal.h>
 #include <time.h>
 #include <math.h>
+#include <limits.h>
 #include "Ecran.h"
 #include "GrilleSDL.h"
 #include "Ressources.h"
@@ -35,12 +36,17 @@ pid_t pid=getpid();
 pthread_t tidEvent=0;
 pthread_t tidReception=0;
 pthread_t tidScore = 0;
-
+pthread_t tidIA=0;
 pthread_t tidAmiral;
 pthread_t tid;
+
 int nbCuirasses=0, nbCroiseurs=0, nbDestoyers=0, nbTorpilleurs=0;
 int nbBateaux=0;
 int nbVerticaux =0, nbHozizontaux=0;
+
+pthread_key_t cleBateau;
+pthread_key_t cleComBateau;
+ComBateau comBateau[NB_BATEAUX];
 
 int flagSousMarin=1;
 
@@ -49,8 +55,10 @@ pthread_mutex_t mutexScore;
 pthread_cond_t condScore;
 pthread_mutex_t mutexBateau;
 pthread_cond_t condBateaux;
+pthread_mutex_t mutexComBateau[NB_BATEAUX];
+pthread_mutex_t mutexMer;
 
-int score = 0;
+int score = 10;
 int MAJScore = 1;
 
 MessageQueue  connexion;  // File de messages
@@ -62,6 +70,11 @@ void *fctThAfficheBateauCoule(void *p);
 void *fctThScore(void *p);
 void *fctThAmiral(void *p);
 void *fctThBateau(void *);
+void *fctThIA(void *);
+
+void HandlerSIGUSR1(int sig, siginfo_t *info, void *p);
+void HandlerSIGUSR1(int sig);
+void HandlerSIGUSR2(int sig, siginfo_t *info, void *p);
 
 int searchPosBateau(Bateau *pBateau);
 int DessineFullBateau(Bateau *pBateau, int opt);
@@ -104,7 +117,7 @@ int main(int argc,char* argv[])
 	Trace("%d Serveur connecter : %d", pid,  pidServeur);
 
 	// Ouverture de la fenetre graphique
-	Trace("(THREAD MAIN %d) Ouverture de la fenetre graphique",pthread_self()); fflush(stdout);
+	Trace("(THREAD MAIN %d) Ouverture de la fenetre graphique",tidSelf()); fflush(stdout);
 	if (OuvertureFenetreGraphique("client") < 0)
 	{
 		Trace("Erreur de OuvrirGrilleSDL\n");
@@ -115,16 +128,29 @@ int main(int argc,char* argv[])
 	pthread_mutex_init(&mutexTabTir,NULL);
 	pthread_mutex_init(&mutexScore, NULL);	
 	pthread_cond_init(&condScore, NULL);
+	pthread_mutex_init(&mutexMer,NULL);
+	pthread_mutex_init(&mutexBateau, NULL);	
+	pthread_cond_init(&condBateaux, NULL);
+	
+	//clé variable spécifique
+  	pthread_key_create(&cleBateau, NULL);
+	
+	for(int i = 0; i< NB_BATEAUX; i++)
+	{
+		pthread_mutex_init(&mutexComBateau[i], NULL);
+	}
 
 	pthread_create(&tidEvent, NULL, fctThEvent, NULL );
 	pthread_create(&tidReception, NULL, fctThReception, NULL);
 	pthread_create(&tidScore, NULL, fctThScore, NULL);
+	pthread_create(&tidAmiral, NULL, fctThAmiral, NULL);
+	pthread_create(&tidIA, NULL, fctThIA, NULL);
 	
 	pthread_join(tidEvent, NULL);
 	// Fermeture de la grille de jeu (SDL)
-	Trace("(THREAD MAIN %d) Fermeture de la fenetre graphique...",pthread_self()); fflush(stdout);
+	Trace("(THREAD MAIN %d) Fermeture de la fenetre graphique...",tidSelf()); fflush(stdout);
 	FermetureFenetreGraphique();
-	Trace("(THREAD MAIN %d) OK Fin",pthread_self()); //fflush(stdout);
+	Trace("(THREAD MAIN %d) OK Fin",tidSelf()); //fflush(stdout);
 
 	exit(0);
 }
@@ -407,7 +433,7 @@ void *fctThAmiral(void *p)
 	
 	
 	pthread_mutex_lock(&mutexBateau);
-	while(nbBateaux > NB_BATEAUX)
+	while(nbBateaux < NB_BATEAUX)
 	{
 		Trace("Amiral cree un bateau !");
 		pBateau = (Bateau *)malloc(sizeof(Bateau));
@@ -450,7 +476,8 @@ void *fctThAmiral(void *p)
 	pthread_mutex_lock(&mutexBateau);
 	while(nbBateaux > 0)
 		pthread_cond_wait(&condBateaux, &mutexBateau);
-		
+	setTitreGrilleSDL("GAME OVER !!!");
+	pthread_mutex_unlock(&mutexBateau);
 	return NULL;
 }
 
@@ -465,15 +492,8 @@ void *fctThBateau(void *p)
 	
 	//construction set
 	sigfillset(&blockSet);
-	sigemptyset(&unblockSet);
-	sigaddset(&unblockSet, SIGINT);
-	
-	//armement handler SIGUSR1
-	struct sigaction sigAct;
-	sigAct.sa_sigaction = HandlerSIGUSR1;
-	sigAct.sa_flags = SA_SIGINFO;
-	sigemptyset(&sigAct.sa_mask);
-	sigaction(SIGUSR1, &sigAct, NULL);
+	sigfillset(&unblockSet);
+	sigdelset(&unblockSet, SIGUSR2);
 	
 	// armement handler SIGUSR2
 	struct sigaction sigAct2;
@@ -490,7 +510,7 @@ void *fctThBateau(void *p)
 		pthread_mutex_lock(&mutexComBateau[i]);
 		if(comBateau[i].tidBateau != 0)
 		{
-			comBateau[i].tidBateau = pthread_self();
+			comBateau[i].tidBateau = tidSelf();
 			BatPose = 1;
 			Place = i;
 		}
@@ -513,7 +533,7 @@ void *fctThBateau(void *p)
 		pthread_exit(0);
 	}
 	DessineFullBateau(pBateau, DRAW);
-	Trace("Bateau dessine !  %d", pthread_self()%INT_MAX);
+	Trace("Bateau dessine !  %d", tidSelf());
 	
 	//unlock
 	pthread_mutex_unlock(&mutexMer);
@@ -535,8 +555,42 @@ void *fctThBateau(void *p)
 		//unlock
 		pthread_mutex_unlock(&mutexMer);
 	}
-	Trace("Fin bateau !!  %d", pthread_self());
+	Trace("Fin bateau !!  %d", tidSelf());
 	pthread_exit(0);
+}
+
+void *fctThIA(void *)
+{
+	// Bloquer tous les signaux
+	sigset_t maskAll;
+	sigfillset(&maskAll);
+	sigprocmask(SIG_SETMASK, &maskAll,NULL);
+	Trace("Debut thread IA    %d", tidSelf());
+	int selectedI, selectedJ;
+	while(1)
+	{
+		waitTime(4, 0);
+		pthread_mutex_lock(&mutexMer);
+		//selection case tir
+		selectedI = rand()%(NB_LIGNES);
+		selectedJ = rand()%(NB_COLONNES);
+		DessineCible(selectedI, selectedJ);
+		//attente 1 second
+		waitTime(1, 0);
+		
+		if(tab[selectedI][selectedJ] == 0)
+		{
+			//pas toucher
+			EffaceCarre(selectedI, selectedJ);
+		}
+		if(tab[selectedI][selectedJ] > 0)
+		{
+			// ************************************************* A FAIRE !!!!
+			//prevenir bateau
+		}
+		
+		pthread_mutex_unlock(&mutexMer);
+	}
 }
 
 int searchPosBateau(Bateau *pBateau)
@@ -614,12 +668,12 @@ int DessineFullBateau(Bateau *pBateau, int opt)
 			if(pBateau->direction == HORIZONTAL)
 			{
 				DessineBateau(pBateau->L%NB_LIGNES, (pBateau->C+i)%NB_COLONNES, pBateau->type, HORIZONTAL,i);
-				tab[pBateau->L%NB_LIGNES][(pBateau->C+i)%NB_COLONNES] = pthread_self();
+				tab[pBateau->L%NB_LIGNES][(pBateau->C+i)%NB_COLONNES] = tidSelf();
 			}
 			else
 			{
 				DessineBateau((pBateau->L+i)%NB_LIGNES, pBateau->C%NB_COLONNES, pBateau->type, VERTICAL,i);
-				tab[(pBateau->L+i)%NB_LIGNES][pBateau->C%NB_COLONNES] = pthread_self();
+				tab[(pBateau->L+i)%NB_LIGNES][pBateau->C%NB_COLONNES] = tidSelf();
 			}
 		}
 	}
@@ -643,18 +697,62 @@ int DessineFullBateau(Bateau *pBateau, int opt)
 	return 1;
 }
 
-void HandlerSIGUSR1(int sig, siginfo_t *info, void *p) 
+int deplacementBateau(Bateau *pBateau)
 {
-	Trace("pid emetteur : %d",info->si_pid);
-	Bateau *pBateau = (Bateau *)pthread_getspecific(cleBateau);
-	Message envois(info->si_pid, SOUSMARIN, (char *)pBateau, sizeof(Bateau));
-	connexion.SendData(envois);
+	DessineFullBateau(pBateau, CLEAR);
+	int tmp=0;
+	if(pBateau->direction == HORIZONTAL)
+	{
+		if(pBateau->sens == DROITE)
+			// Detection obstacle
+			if(tab[pBateau->L][(pBateau->C + pBateau->type)%NB_COLONNES] != 0)
+				pBateau->sens = GAUCHE;
+			else
+				pBateau->C = (pBateau->C + 1)%NB_COLONNES;
+		else
+		{
+			if(pBateau->C - 1 <0)
+				tmp = NB_COLONNES-1;
+			else
+				tmp = pBateau->C -1;
+			if(tab[pBateau->L][(tmp)%NB_COLONNES] != 0)
+				pBateau->sens = DROITE; 
+			else
+				pBateau->C = (tmp)%NB_COLONNES;
+		}
+	}
+	else
+	{
+		if(pBateau->sens == BAS)
+			if(tab[(pBateau->L + pBateau->type)%NB_LIGNES][pBateau->C] != 0)
+				pBateau->sens = HAUT;
+			else
+				pBateau->L = (pBateau->L + 1)%NB_LIGNES;
+		else
+		{
+			if(pBateau->L - 1 < 0)
+				tmp = NB_LIGNES-1;
+			else
+				tmp = pBateau->L -1;
+			if(tab[(tmp)%NB_LIGNES][pBateau->C] != 0)
+				pBateau->sens = BAS;
+			else
+				pBateau->L = (tmp)%NB_LIGNES;
+		}
+	}
+	DessineFullBateau(pBateau, DRAW);
+	return 1;
 }
 
 void HandlerSIGUSR2(int sig, siginfo_t *info,void *p)
 {
+	pthread_mutex_lock(&mutexBateau);
 	
+	nbBateaux--;
 	
+	pthread_mutex_unlock(&mutexBateau);
+	pthread_cond_signal(&condBateaux);
+	pthread_exit(0);
 }
 
 

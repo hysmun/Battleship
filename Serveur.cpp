@@ -69,18 +69,26 @@ ComBateau comBateau[NB_BATEAUX];
 int main(int argc,char* argv[])
 {
   srand((unsigned)time(NULL));
-  Trace("(THREAD MAIN %d) Pid  = %d",pthread_self(),getpid());
+  Trace("(THREAD MAIN %d) Pid  = %d",tidSelf(),getpid());
 
   // Creation file de messages
   connexion.init(1000);
 
-  // Ouverture de la fenetre graphique
-  Trace("(THREAD MAIN %d) Ouverture de la fenetre graphique",pthread_self()); fflush(stdout);
-  if (OuvertureFenetreGraphique("serveur") < 0)
-  {
-    Trace("Erreur de OuvrirGrilleSDL\n");
-    exit(1);
-  }
+	// Ouverture de la fenetre graphique
+	Trace("(THREAD MAIN %d) Ouverture de la fenetre graphique",tidSelf()); fflush(stdout);
+	if(argc > 1 && argc < 3 && argv[1][0] == '-' && argv[1][1] == 's')
+	{
+		Trace("Sans fenetre graphique !");
+	}
+	else
+	{
+		Trace("Avec fenetre graphique !!");
+		if (OuvertureFenetreGraphique("serveur") < 0)
+		{
+			Trace("Erreur de OuvrirGrilleSDL\n");
+			exit(1);
+		}
+	}
 
   // Armement des signaux
   struct sigaction sigAct;
@@ -130,9 +138,9 @@ int main(int argc,char* argv[])
   {
     try
     {
-      Trace("(THREAD MAIN %d) Attente d'une requete...",pthread_self());
+      Trace("(THREAD MAIN %d) Attente d'une requete...",tidSelf());
       requete = connexion.ReceiveData(1);
-      Trace("(THREAD MAIN %d) Message Recu de : %d",pthread_self(),requete.getExpediteur());   
+      Trace("(THREAD MAIN %d) Message Recu de : %d",tidSelf(),requete.getExpediteur());   
       pthread_create(&tid, NULL, fctThRequete, (void *)&requete);
 
       
@@ -151,12 +159,12 @@ int main(int argc,char* argv[])
 //************************************************************************************
 void HandlerSIGINT(int s)
 {
-  Trace("(THREAD MAIN %d) Reception SIGINT",pthread_self());
+  Trace("(THREAD MAIN %d) Reception SIGINT",tidSelf());
 
   // Fermeture de la grille de jeu (SDL)
-  Trace("(THREAD MAIN %d) Fermeture de la fenetre graphique...",pthread_self()); fflush(stdout);
+  Trace("(THREAD MAIN %d) Fermeture de la fenetre graphique...",tidSelf()); fflush(stdout);
   FermetureFenetreGraphique();
-  Trace("(THREAD MAIN %d) OK Fin",pthread_self()); //fflush(stdout);
+  Trace("(THREAD MAIN %d) OK Fin",tidSelf()); //fflush(stdout);
 
   // Suppression de la file de messages
   connexion.close();
@@ -362,8 +370,9 @@ void *fctThBateau(void *p)
 	
 	//construction set
 	sigfillset(&blockSet);
-	sigemptyset(&unblockSet);
-	sigaddset(&unblockSet, SIGINT);
+	sigfillset(&unblockSet);
+	sigdelset(&unblockSet, SIGUSR1);
+	sigdelset(&unblockSet, SIGUSR2);
 	
 	//armement handler SIGUSR1
 	struct sigaction sigAct;
@@ -387,7 +396,7 @@ void *fctThBateau(void *p)
 		pthread_mutex_lock(&mutexComBateau[i]);
 		if(comBateau[i].tidBateau != 0)
 		{
-			comBateau[i].tidBateau = pthread_self();
+			comBateau[i].tidBateau = tidSelf();
 			BatPose = 1;
 			Place = i;
 		}
@@ -410,7 +419,7 @@ void *fctThBateau(void *p)
 		pthread_exit(0);
 	}
 	DessineFullBateau(pBateau, DRAW);
-	Trace("Bateau dessine !  %d", pthread_self()%INT_MAX);
+	Trace("Bateau dessine !  %d", tidSelf());
 	
 	//unlock
 	pthread_mutex_unlock(&mutexMer);
@@ -432,7 +441,7 @@ void *fctThBateau(void *p)
 		//unlock
 		pthread_mutex_unlock(&mutexMer);
 	}
-	Trace("Fin bateau !!  %d", pthread_self());
+	Trace("Fin bateau !!  %d", tidSelf());
 	pthread_exit(0);
 }
 
@@ -511,12 +520,12 @@ int DessineFullBateau(Bateau *pBateau, int opt)
 			if(pBateau->direction == HORIZONTAL)
 			{
 				DessineBateau(pBateau->L%NB_LIGNES, (pBateau->C+i)%NB_COLONNES, pBateau->type, HORIZONTAL,i);
-				tab[pBateau->L%NB_LIGNES][(pBateau->C+i)%NB_COLONNES] = (int)pthread_self();
+				tab[pBateau->L%NB_LIGNES][(pBateau->C+i)%NB_COLONNES] = tidSelf();
 			}
 			else
 			{
 				DessineBateau((pBateau->L+i)%NB_LIGNES, pBateau->C%NB_COLONNES, pBateau->type, VERTICAL,i);
-				tab[(pBateau->L+i)%NB_LIGNES][pBateau->C%NB_COLONNES] = (int)pthread_self();
+				tab[(pBateau->L+i)%NB_LIGNES][pBateau->C%NB_COLONNES] = tidSelf();
 			}
 		}
 	}
