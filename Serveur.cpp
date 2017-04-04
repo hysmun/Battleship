@@ -612,8 +612,9 @@ void HandlerSIGUSR2(int sig, siginfo_t *info,void *p)
 	ComBateau *comBateau = (ComBateau *)pthread_getspecific(cleComBateau);
 	pthread_mutex_lock(&comBateau->mutex);
 	while(comBateau->indLecture == comBateau->indEcriture)
-	pthread_cond_wait(&comBateau->cond,&comBateau->mutex);
-	memcpy(&resultTir,comBateau->Requete,sizeof(Message));
+		pthread_cond_wait(&comBateau->cond,&comBateau->mutex);
+	memcpy(&resultTir,comBateau->Requete[comBateau->indLecture],sizeof(Message));
+	comBateau->indLecture ++;
 	DessineExplosion(resultTir.)
 	
 	
