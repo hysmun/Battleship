@@ -606,7 +606,7 @@ void HandlerSIGUSR1(int sig, siginfo_t *info, void *p)
 
 void HandlerSIGUSR2(int sig, siginfo_t *info,void *p)
 {
-	
+	pthread_getspecific(cleBateau);
 	
 }
 
