@@ -611,8 +611,9 @@ void HandlerSIGUSR1(int sig, siginfo_t *info, void *p)
 void HandlerSIGUSR2(int sig, siginfo_t *info,void *p)
 {
 	Trace("Entree SIGUSR2");
-	Message resultTir;
+	Message resultTir,reponse;
 	RequeteTir reqTir;
+	ReponseTir repTir;
 	Bateau *pBateau = (Bateau *)pthread_getspecific(cleBateau);
 	ComBateau *comBateau = (ComBateau *)pthread_getspecific(cleComBateau);
 	pthread_mutex_lock(&comBateau->mutex);
@@ -622,9 +623,21 @@ void HandlerSIGUSR2(int sig, siginfo_t *info,void *p)
 	comBateau->indLecture ++;
 	memcpy(&reqTir, resultTir.getData(), sizeof(RequeteTir));
 	DessineExplosion(reqTir.L, reqTir.C, ORANGE);
-	if()
+	if(comBateau->indEcriture != pBateau->type)
+	{
+		reponse.setType(comBateau->tidBateau);
+		reponse.setRequete(TIR);
+		repTir.L = reqTir.L;
+		repTir.C = reqTir.C;
+		repTir.status = TOUCHE;
+		repTir.bateau = *pBateau;
+		reponse.setData((char*)&repTir,sizeof(ReponseTir));
+		connexion.SendData(reponse);
+	}
+	else
+	{
 	
-	
+	}
 	pthread_mutex_unlock(&comBateau->mutex);
 }
 
