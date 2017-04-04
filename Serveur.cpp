@@ -252,7 +252,7 @@ void *fctThRequete(void *p)
 							{
 								ShipFound = 1;
 								pthread_mutex_lock(&mutexComBateau[i]);
-								memcpy(&comBateau[i].Requete[comBateau[i].indEcriture],requete.getData(),sizeof(RequeteTir));
+								memcpy(&comBateau[i].Requete[comBateau[i].indEcriture],&requete,sizeof(RequeteTir));
 								comBateau[i].indEcriture++;
 								pthread_cond_signal(&comBateau[i].cond);
 								pthread_mutex_unlock(&mutexComBateau[i]);
@@ -607,8 +607,17 @@ void HandlerSIGUSR1(int sig, siginfo_t *info, void *p)
 
 void HandlerSIGUSR2(int sig, siginfo_t *info,void *p)
 {
-	pthread_getspecific(cleBateau);
+	Message resultTir;
+	Bateau *pBateau = (Bateau *)pthread_getspecific(cleBateau);
+	ComBateau *comBateau = (ComBateau *)pthread_getspecific(cleComBateau);
+	pthread_mutex_lock(&comBateau->mutex);
+	while(comBateau->indLecture == comBateau->indEcriture)
+	pthread_cond_wait(&comBateau->cond,&comBateau->mutex);
+	memcpy(&resultTir,comBateau->Requete,sizeof(Message));
+	DessineExplosion(resultTir.)
 	
+	
+	pthread_mutex_unlock(&comBateau->mutex);
 }
 
 void AfficheMer(void)
