@@ -184,7 +184,7 @@ void *fctThRequete(void *p)
 	sigset_t maskAll;
 	sigfillset(&maskAll);
 	sigprocmask(SIG_SETMASK, &maskAll,NULL);
-	
+	Trace("Thread requete !!");
 	Message requete=(Message)*((Message *)p), reponse;
 	switch(requete.getRequete())
 	{
@@ -226,6 +226,7 @@ void *fctThRequete(void *p)
 		{
 			AfficheMer();
 			// Recuperation charge utile requete
+			Trace("Tir ");
 			RequeteTir reqTir;
 			ReponseTir repTir;
 			memcpy(&reqTir,requete.getData(),sizeof(RequeteTir)); // on recupere le contenu du message
@@ -234,7 +235,6 @@ void *fctThRequete(void *p)
 			repTir.status = PLOUF;
 			if(pthread_mutex_trylock(&mutexCible[reqTir.L][reqTir.C]) == 0)
 			{
-				pthread_mutex_lock(&mutexCible[reqTir.L][reqTir.C]);
 				waitTime(5, 0);
 				// Preparation de la reponse
 				repTir.L = reqTir.L;
@@ -252,7 +252,7 @@ void *fctThRequete(void *p)
 							{
 								ShipFound = 1;
 								pthread_mutex_lock(&mutexComBateau[i]);
-								memcpy(&comBateau[i].Requete[comBateau[i].indEcriture],&requete,sizeof(RequeteTir));
+								memcpy(&comBateau[i].Requete[comBateau[i].indEcriture],&requete,sizeof(Message));
 								comBateau[i].indEcriture++;
 								pthread_cond_signal(&comBateau[i].cond);
 								pthread_mutex_unlock(&mutexComBateau[i]);
@@ -296,6 +296,7 @@ void *fctThRequete(void *p)
 			Trace("!!!!!     requete non traiter     !!!!!");
 		}
    }
+   Trace("Fin requete");
    pthread_exit(0);
 }
 
@@ -398,6 +399,8 @@ void *fctThBateau(void *p)
 		if(comBateau[i].tidBateau != 0)
 		{
 			comBateau[i].tidBateau = tidSelf();
+			comBateau[i].indEcriture= 0;
+			comBateau[i].indLecture =0;
 			BatPose = 1;
 			Place = i;
 		}
