@@ -69,13 +69,13 @@ ComBateau comBateau[NB_BATEAUX];
 int main(int argc,char* argv[])
 {
   srand((unsigned)time(NULL));
-  Trace("(THREAD MAIN %d) Pid  = %d",tidSelf(),getpid());
+  Trace("(THREAD MAIN %d) Pid  = %d",pthread_self(),getpid());
 
   // Creation file de messages
   connexion.init(1000);
 
 	// Ouverture de la fenetre graphique
-	Trace("(THREAD MAIN %d) Ouverture de la fenetre graphique",tidSelf()); fflush(stdout);
+	Trace("(THREAD MAIN %d) Ouverture de la fenetre graphique",pthread_self()); fflush(stdout);
 	if(argc > 1 && argc < 3 && argv[1][0] == '-' && argv[1][1] == 's')
 	{
 		Trace("Sans fenetre graphique !");
@@ -117,6 +117,7 @@ int main(int argc,char* argv[])
 	for(int i = 0; i< NB_BATEAUX; i++)
 	{
 		pthread_mutex_init(&mutexComBateau[i], NULL);
+		comBateau[i].tidBateau = 0;
 	}
 	
 	for(int i = 0; i< NB_LIGNES; i++)
@@ -139,9 +140,9 @@ int main(int argc,char* argv[])
   {
     try
     {
-      Trace("(THREAD MAIN %d) Attente d'une requete...",tidSelf());
+      Trace("(THREAD MAIN %d) Attente d'une requete...",pthread_self());
       requete = connexion.ReceiveData(1);
-      Trace("(THREAD MAIN %d) Message Recu de : %d",tidSelf(),requete.getExpediteur());   
+      Trace("(THREAD MAIN %d) Message Recu de : %d",pthread_self(),requete.getExpediteur());   
       pthread_create(&tid, NULL, fctThRequete, (void *)&requete);
 
       
@@ -160,12 +161,12 @@ int main(int argc,char* argv[])
 //************************************************************************************
 void HandlerSIGINT(int s)
 {
-  Trace("(THREAD MAIN %d) Reception SIGINT",tidSelf());
+  Trace("(THREAD MAIN %d) Reception SIGINT",pthread_self());
 
   // Fermeture de la grille de jeu (SDL)
-  Trace("(THREAD MAIN %d) Fermeture de la fenetre graphique...",tidSelf()); fflush(stdout);
+  Trace("(THREAD MAIN %d) Fermeture de la fenetre graphique...",pthread_self()); fflush(stdout);
   FermetureFenetreGraphique();
-  Trace("(THREAD MAIN %d) OK Fin",tidSelf()); //fflush(stdout);
+  Trace("(THREAD MAIN %d) OK Fin",pthread_self()); //fflush(stdout);
 
   // Suppression de la file de messages
   connexion.close();
@@ -248,6 +249,7 @@ void *fctThRequete(void *p)
 						int ShipFound = 0;
 						for(int i = 0;(i<NB_BATEAUX) && (ShipFound != 1);i++)
 						{
+							Trace("test %d", i);
 							if(tab[reqTir.L][reqTir.C] == comBateau[i].tidBateau)
 							{
 								ShipFound = 1;
@@ -256,12 +258,25 @@ void *fctThRequete(void *p)
 								comBateau[i].indEcriture++;
 								pthread_cond_signal(&comBateau[i].cond);
 								pthread_mutex_unlock(&mutexComBateau[i]);
+								Trace("fin test %d", tab[reqTir.L][reqTir.C]);
 							}
 						}
-						pthread_kill(tab[reqTir.L][reqTir.C],SIGUSR2);
-						//DessineExplosion(reqTir.L,reqTir.C,ORANGE);
-						//pthread_kill(tab[reqTir.L][reqTir.C], SIGUSR2);
-						tab[reqTir.L][reqTir.C] = -tab[reqTir.L][reqTir.C];
+						if(ShipFound == 1)
+						{
+							Trace("envois signal");
+							pthread_kill(tab[reqTir.L][reqTir.C],SIGUSR2);
+							//DessineExplosion(reqTir.L,reqTir.C,ORANGE);
+							//pthread_kill(tab[reqTir.L][reqTir.C], SIGUSR2);
+							Trace("test");
+							tab[reqTir.L][reqTir.C] = -tab[reqTir.L][reqTir.C];
+						}
+						else
+						{
+							Trace("ERREUR !!");
+						}
+						Trace("fin bateau tir");
+						Trace("Fin requete");
+						pthread_exit(0);
 					}
 					else
 					{
@@ -396,9 +411,10 @@ void *fctThBateau(void *p)
 	for(int i = 0;(i<NB_BATEAUX) && (BatPose != 1);i++)
 	{
 		pthread_mutex_lock(&mutexComBateau[i]);
-		if(comBateau[i].tidBateau != 0)
+		if(comBateau[i].tidBateau == 0)
 		{
-			comBateau[i].tidBateau = tidSelf();
+			Trace("Remplis la struc bateau %d", i);
+			comBateau[i].tidBateau = pthread_self();
 			comBateau[i].indEcriture= 0;
 			comBateau[i].indLecture =0;
 			pthread_mutex_init(&comBateau[i].mutex, NULL);
@@ -425,7 +441,7 @@ void *fctThBateau(void *p)
 		pthread_exit(0);
 	}
 	DessineFullBateau(pBateau, DRAW);
-	Trace("Bateau dessine !  %d", tidSelf());
+	Trace("Bateau dessine !  %d", pthread_self());
 	
 	//unlock
 	pthread_mutex_unlock(&mutexMer);
@@ -447,7 +463,7 @@ void *fctThBateau(void *p)
 		//unlock
 		pthread_mutex_unlock(&mutexMer);
 	}
-	Trace("Fin bateau !!  %d", tidSelf());
+	Trace("Fin bateau !!  %d", pthread_self());
 	pthread_exit(0);
 }
 
@@ -526,12 +542,12 @@ int DessineFullBateau(Bateau *pBateau, int opt)
 			if(pBateau->direction == HORIZONTAL)
 			{
 				DessineBateau(pBateau->L%NB_LIGNES, (pBateau->C+i)%NB_COLONNES, pBateau->type, HORIZONTAL,i);
-				tab[pBateau->L%NB_LIGNES][(pBateau->C+i)%NB_COLONNES] = tidSelf();
+				tab[pBateau->L%NB_LIGNES][(pBateau->C+i)%NB_COLONNES] = pthread_self();
 			}
 			else
 			{
 				DessineBateau((pBateau->L+i)%NB_LIGNES, pBateau->C%NB_COLONNES, pBateau->type, VERTICAL,i);
-				tab[(pBateau->L+i)%NB_LIGNES][pBateau->C%NB_COLONNES] = tidSelf();
+				tab[(pBateau->L+i)%NB_LIGNES][pBateau->C%NB_COLONNES] = pthread_self();
 			}
 		}
 	}

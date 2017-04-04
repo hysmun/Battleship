@@ -32,9 +32,9 @@ int waitRand(long min, long max)
 	return waitTime(number/1000000000, number%1000000000);
 }
 
-int tidSelf()
+unsigned int tidSelf()
 {
-	return pthread_self()%INT_MAX;
+	return pthread_self()/*%INT_MAX*/;
 }
 
 
