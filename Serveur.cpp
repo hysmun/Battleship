@@ -446,6 +446,8 @@ void *fctThBateau(void *p)
 	}
 	DessineFullBateau(pBateau, DRAW);
 	Trace("Bateau dessine !  %d", pthread_self());
+	if((int)pthread_self() < (int)0)
+		exit(0);
 	
 	//unlock
 	pthread_mutex_unlock(&mutexMer);
