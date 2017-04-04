@@ -681,7 +681,7 @@ void HandlerSIGUSR2(int sig, siginfo_t *info,void *p)
 		repTir->C = reqTir.C;
 		repTir->status = COULE;
 		memcpy(&repTir->bateau, pBateau, sizeof(Bateau));
-		reponse.setData((char*)&repTir,sizeof(ReponseTir));
+		reponse.setData((char*)repTir,sizeof(ReponseTir));
 		connexion.SendData(reponse);
 		// Prevenir tous les autres joueurs
 		reponse.setRequete(BATEAU_COULE);
@@ -695,8 +695,6 @@ void HandlerSIGUSR2(int sig, siginfo_t *info,void *p)
 				connexion.SendData(reponse);
 			}
 		}
-		waitTime(3,0);
-		Trace("fin wait");
 		for(int i = 0;i<NB_LIGNES;i++)
 		{
 			for(int j = 0;j<NB_COLONNES;i++)

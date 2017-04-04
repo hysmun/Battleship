@@ -191,7 +191,7 @@ void *fctThEvent(void *p)
 				pthread_cond_signal(&condScore);
 				if(event.ligne > 10)
 				{
-					Trace("Demande de tir !\n");
+					Trace("Demande de tir !");
 					pthread_mutex_lock(&mutexTabTir);
 					if(tabTir[event.ligne-11][event.colonne] != 0)
 					{
@@ -298,6 +298,7 @@ void *fctThReception(void *p)
 					case PLOUF:
 						Trace("Plouf");
 						pthread_mutex_lock(&mutexTabTir);
+						EffaceCarre(tmpRepTir.L,tmpRepTir.C);
 						tabTir[tmpRepTir.L][tmpRepTir.C] = 0;
 						pthread_mutex_unlock(&mutexTabTir);
 						break;
@@ -341,6 +342,10 @@ void *fctThReception(void *p)
 				}
 				break;
 			}
+			case BATEAU_COULE:
+				Trace("Bateau coule !!");
+				pthread_create(&tid, NULL, fctThAfficheBateauCoule, &(tmpRepTir.bateau));
+				break;
 			default:
 				Trace("Erreur switch requete bateau");
 				break;
@@ -373,17 +378,19 @@ void *fctThAfficheBateauCoule(void *p)
 			DessineExplosion((pBateau.L+i)%NB_LIGNES+11, pBateau.C%NB_COLONNES,ORANGE);
 		}
 	}
-	
+	waitTime(3,0);
 	pthread_mutex_lock(&mutexTabTir);
 	for(i=0; i< pBateau.type; i++)
 	{
 		if(pBateau.direction == HORIZONTAL)
 		{
 			tabTir[pBateau.L%NB_LIGNES+11][(pBateau.C+i)%NB_COLONNES] = 0;
+			EffaceCarre(pBateau.L%NB_LIGNES+11,(pBateau.C+i)%NB_COLONNES);
 		}
 		else
 		{
 			tabTir[(pBateau.L+i)%NB_LIGNES+11][pBateau.C%NB_COLONNES] = 0;
+			EffaceCarre((pBateau.L+i)%NB_LIGNES+11,pBateau.C%NB_COLONNES);
 		}
 	}
 	pthread_mutex_unlock(&mutexTabTir);
