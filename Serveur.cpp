@@ -117,6 +117,7 @@ int main(int argc,char* argv[])
 	for(int i = 0; i< NB_BATEAUX; i++)
 	{
 		pthread_mutex_init(&mutexComBateau[i], NULL);
+		comBateau[i].tidBateau = 0;
 	}
 	
 	for(int i = 0; i< NB_LIGNES; i++)
@@ -248,6 +249,7 @@ void *fctThRequete(void *p)
 						int ShipFound = 0;
 						for(int i = 0;(i<NB_BATEAUX) && (ShipFound != 1);i++)
 						{
+							Trace("test %d", i);
 							if(tab[reqTir.L][reqTir.C] == comBateau[i].tidBateau)
 							{
 								ShipFound = 1;
@@ -256,12 +258,25 @@ void *fctThRequete(void *p)
 								comBateau[i].indEcriture++;
 								pthread_cond_signal(&comBateau[i].cond);
 								pthread_mutex_unlock(&mutexComBateau[i]);
+								Trace("fin test %d", tab[reqTir.L][reqTir.C]);
 							}
 						}
-						pthread_kill(tab[reqTir.L][reqTir.C],SIGUSR2);
-						//DessineExplosion(reqTir.L,reqTir.C,ORANGE);
-						//pthread_kill(tab[reqTir.L][reqTir.C], SIGUSR2);
-						tab[reqTir.L][reqTir.C] = -tab[reqTir.L][reqTir.C];
+						if(ShipFound == 1)
+						{
+							Trace("envois signal");
+							pthread_kill(tab[reqTir.L][reqTir.C],SIGUSR2);
+							//DessineExplosion(reqTir.L,reqTir.C,ORANGE);
+							//pthread_kill(tab[reqTir.L][reqTir.C], SIGUSR2);
+							Trace("test");
+							tab[reqTir.L][reqTir.C] = -tab[reqTir.L][reqTir.C];
+						}
+						else
+						{
+							Trace("ERREUR !!");
+						}
+						Trace("fin bateau tir");
+						Trace("Fin requete");
+						pthread_exit(0);
 					}
 					else
 					{
@@ -396,8 +411,9 @@ void *fctThBateau(void *p)
 	for(int i = 0;(i<NB_BATEAUX) && (BatPose != 1);i++)
 	{
 		pthread_mutex_lock(&mutexComBateau[i]);
-		if(comBateau[i].tidBateau != 0)
+		if(comBateau[i].tidBateau == 0)
 		{
+			Trace("Remplis la struc bateau %d", i);
 			comBateau[i].tidBateau = tidSelf();
 			comBateau[i].indEcriture= 0;
 			comBateau[i].indLecture =0;
@@ -624,7 +640,7 @@ void HandlerSIGUSR2(int sig, siginfo_t *info,void *p)
 	comBateau->indLecture ++;
 	memcpy(&reqTir, resultTir.getData(), sizeof(RequeteTir));
 	DessineExplosion(reqTir.L, reqTir.C, ORANGE);
-	if()
+	//if()
 	
 	
 	pthread_mutex_unlock(&comBateau->mutex);
