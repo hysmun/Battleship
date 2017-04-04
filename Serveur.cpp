@@ -723,10 +723,6 @@ void HandlerSIGUSR2(int sig, siginfo_t *info,void *p)
 			}
 		}
 		free(pBateau);
-<<<<<<< HEAD
-	}
-=======
->>>>>>> 60fb1daedb11d7b30534e770ceeb82ee16631068
 	}
 	catch(MessageQueueException e)
 	{
