@@ -608,14 +608,16 @@ void HandlerSIGUSR1(int sig, siginfo_t *info, void *p)
 void HandlerSIGUSR2(int sig, siginfo_t *info,void *p)
 {
 	Message resultTir;
+	RequeteTir reqTir;
 	Bateau *pBateau = (Bateau *)pthread_getspecific(cleBateau);
 	ComBateau *comBateau = (ComBateau *)pthread_getspecific(cleComBateau);
 	pthread_mutex_lock(&comBateau->mutex);
 	while(comBateau->indLecture == comBateau->indEcriture)
 		pthread_cond_wait(&comBateau->cond,&comBateau->mutex);
-	memcpy(&resultTir,comBateau->Requete[comBateau->indLecture],sizeof(Message));
+	memcpy(&resultTir,&comBateau->Requete[comBateau->indLecture],sizeof(Message));
 	comBateau->indLecture ++;
-	DessineExplosion(resultTir.)
+	memcpy(&reqTir, resultTir.getData(), sizeof(RequeteTir));
+	DessineExplosion(reqTir.L, reqTir.C, ORANGE);
 	
 	
 	pthread_mutex_unlock(&comBateau->mutex);
