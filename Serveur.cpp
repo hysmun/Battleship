@@ -246,7 +246,7 @@ void *fctThRequete(void *p)
 				{
 					if(tab[reqTir.L][reqTir.C] > 0)
 					{
-						Trace("Bateau touche");
+						Trace("Bateau touche pos %d -- %d",reqTir.L, reqTir.C );
 						int ShipFound = 0;
 						for( i = 0;(i<NB_BATEAUX) && (ShipFound != 1);i++)
 						{
@@ -255,7 +255,8 @@ void *fctThRequete(void *p)
 							{
 								ShipFound = 1;
 								pthread_mutex_lock(&mutexComBateau[i]);
-								memcpy(&comBateau[i].Requete[comBateau[i].indEcriture],&requete,sizeof(Message));
+								Trace("Requete" );
+								memcpy(&(comBateau[i].Requete[comBateau[i].indEcriture]),&requete,sizeof(Message));
 								comBateau[i].indEcriture++;
 								pthread_cond_signal(&comBateau[i].cond);
 								pthread_mutex_unlock(&mutexComBateau[i]);
@@ -629,12 +630,15 @@ void HandlerSIGUSR1(int sig, siginfo_t *info, void *p)
 
 void HandlerSIGUSR2(int sig, siginfo_t *info,void *p)
 {
-	Trace("Entree SIGUSR2");
+	try
+	{
+	Trace("Entree SIGUSR2 je suis %d", pthread_self());
 	Message resultTir,reponse;
 	RequeteTir reqTir;
 	ReponseTir *repTir = (ReponseTir *)malloc(sizeof(ReponseTir));
 	Bateau *pBateau = (Bateau *)pthread_getspecific(cleBateau);
 	ComBateau *comBateau = (ComBateau *)pthread_getspecific(cleComBateau);
+	Trace("Info : bateau %d    --    %d -- %d ", comBateau->tidBateau, comBateau->indLecture, comBateau->indEcriture);
 	while(1)
 	{
 		pthread_mutex_lock(&comBateau->mutex);
@@ -643,10 +647,11 @@ void HandlerSIGUSR2(int sig, siginfo_t *info,void *p)
 		memcpy(&resultTir,&comBateau->Requete[comBateau->indLecture],sizeof(Message));
 		comBateau->indLecture ++;
 		memcpy(&reqTir, resultTir.getData(), sizeof(RequeteTir));
+		Trace("Toucher ! envois a %d   pos %d -- %d", resultTir.getExpediteur(), reqTir.L, reqTir.C );
 		DessineExplosion(reqTir.L, reqTir.C, ORANGE);
 		if(comBateau->indEcriture != pBateau->type)
 		{
-			Trace("Toucher ! envois a %d", resultTir.getExpediteur());
+			
 			reponse.setType(resultTir.getExpediteur());
 			reponse.setRequete(TIR);
 			repTir->L = reqTir.L;
@@ -660,8 +665,14 @@ void HandlerSIGUSR2(int sig, siginfo_t *info,void *p)
 		else
 		{
 			Trace("euh autre");
+			break;
 		}
-		reponse.setType(comBateau->tidBateau);
+		//waitTime(2, 0);
+		
+		//delete(pBateau);
+		pthread_mutex_unlock(&comBateau->mutex);
+	}
+	reponse.setType(resultTir.getExpediteur());
 		reponse.setRequete(TIR);
 		repTir->L = reqTir.L;
 		repTir->C = reqTir.C;
@@ -682,7 +693,7 @@ void HandlerSIGUSR2(int sig, siginfo_t *info,void *p)
 		{
 			for(int j = 0;j<NB_COLONNES;i++)
 			{
-				if(tab[i][j] == tidSelf())
+				if(tab[i][j] == (int)pthread_self())
 				{
 					tab[i][j] = 0;
 				}
@@ -714,8 +725,15 @@ void HandlerSIGUSR2(int sig, siginfo_t *info,void *p)
 				break;			
 		}
 		pthread_cond_signal(&condBateaux);
-		delete(pBateau);
-		pthread_mutex_unlock(&comBateau->mutex);
+	}
+	catch(MessageQueueException e)
+	{
+		Trace("MessageQueueException  : %s", e.getMessage());	
+	}
+	catch(...)
+	{
+		Trace("Erreur handler SIGUSR2");
+		perror("error");	
 	}
 }
 

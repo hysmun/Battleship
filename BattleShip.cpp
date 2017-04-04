@@ -302,7 +302,7 @@ void *fctThReception(void *p)
 						pthread_mutex_unlock(&mutexTabTir);
 						break;
 					case TOUCHE:
-						Trace("Touche");
+						Trace("Touche  pos :   %d   --   %d  ",tmpRepTir.L+11, tmpRepTir.C );
 						EffaceCarre(tmpRepTir.L+11, tmpRepTir.C);
 						DessineExplosion(tmpRepTir.L+11, tmpRepTir.C, ORANGE);
 						pthread_mutex_lock(&mutexScore);
@@ -404,14 +404,16 @@ void *fctThScore(void *p)
 		while(!MAJScore)
 			pthread_cond_wait(&condScore, &mutexScore);
 		//score mis a jour
+		Trace("Maj score %d", score);
 		for(int i =0; i<3; i++)
 		{
 			EffaceCarre(10, 7+i);
-			DessineChiffre(10, 7+i, score == 0 ? 0 : (int)(score/modulo));
+			DessineChiffre(10, 7+i, score == 0 ? 0 : ((int)(score/modulo))%10);
 			modulo /= 10;
 		}
 		modulo = 100;
 		MAJScore = 0;
+		Trace("fin maj score");
 		pthread_mutex_unlock(&mutexScore);
 	}
 	
