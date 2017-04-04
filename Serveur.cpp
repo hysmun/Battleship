@@ -259,8 +259,9 @@ void *fctThRequete(void *p)
 								//memcpy(&(comBateau[i].Requete[comBateau[i].indEcriture]),&requete,sizeof(Message));
 								comBateau[i].Requete[comBateau[i].indEcriture] = requete;
 								comBateau[i].indEcriture++;
-								pthread_cond_signal(&comBateau[i].cond);
+								
 								pthread_mutex_unlock(&mutexComBateau[i]);
+								pthread_cond_signal(&comBateau[i].cond);
 								//Trace("fin test %d", tab[reqTir.L][reqTir.C]);
 							}
 						}
@@ -279,7 +280,9 @@ void *fctThRequete(void *p)
 						}
 						//Trace("fin bateau tir");
 						//Trace("Fin requete");
-						//pthread_exit(0);
+						pthread_mutex_unlock(&mutexCible[reqTir.L][reqTir.C]);
+						pthread_mutex_unlock(&mutexMer);
+						pthread_exit(0);
 					}
 					else
 					{
@@ -666,7 +669,7 @@ void HandlerSIGUSR2(int sig, siginfo_t *info,void *p)
 		}
 		else
 		{
-			//Trace("euh autre");
+			Trace("euh autre");
 			break;
 		}
 		//waitTime(2, 0);
@@ -679,17 +682,17 @@ void HandlerSIGUSR2(int sig, siginfo_t *info,void *p)
 		repTir->L = reqTir.L;
 		repTir->C = reqTir.C;
 		repTir->status = COULE;
-		repTir->bateau = *pBateau;
+		memcpy(&repTir->bateau, pBateau, sizeof(Bateau));
 		reponse.setData((char*)&repTir,sizeof(ReponseTir));
 		connexion.SendData(reponse);
 		// Prevenir tous les autres joueurs
 		reponse.setRequete(BATEAU_COULE);
-		for(int i = 0;i<10;i++)
+		/*for(int i = 0;i<10;i++)
 		{
 			//Sauf le joueur qui a coulé le bateau
 			reponse.setType(joueurs[i]);
 			connexion.SendData(reponse);
-		}
+		}*/
 		waitTime(3,0);
 		for(int i = 0;i<NB_LIGNES;i++)
 		{
@@ -726,6 +729,7 @@ void HandlerSIGUSR2(int sig, siginfo_t *info,void *p)
 				nbCuirasses--;
 				break;			
 		}
+		pthread_mutex_unlock(&comBateau->mutex);
 		pthread_cond_signal(&condBateaux);
 	}
 	catch(MessageQueueException e)
