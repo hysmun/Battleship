@@ -41,7 +41,7 @@ void HandlerSIGUSR2(int sig, siginfo_t *info, void *p);
 void AfficheMer(void);
 
 // Tableau de jeu (mer)
-int tab[NB_LIGNES][NB_COLONNES]={{0}};
+long tab[NB_LIGNES][NB_COLONNES]={{0}};
 int lignes[NB_LIGNES]={0};
 int colonnes[NB_COLONNES]={0};
 pthread_t tidAmiral;
@@ -251,7 +251,7 @@ void *fctThRequete(void *p)
 						for( i = 0;(i<NB_BATEAUX) && (ShipFound != 1);i++)
 						{
 							//Trace("test %d", i);
-							if(tab[reqTir.L][reqTir.C] == (int)comBateau[i].tidBateau)
+							if(tab[reqTir.L][reqTir.C] == (long)comBateau[i].tidBateau)
 							{
 								ShipFound = 1;
 								pthread_mutex_lock(&mutexComBateau[i]);
@@ -445,8 +445,8 @@ void *fctThBateau(void *p)
 		pthread_exit(0);
 	}
 	DessineFullBateau(pBateau, DRAW);
-	Trace("Bateau dessine !  %d", pthread_self());
-	if((int)pthread_self() < (int)0)
+	Trace("Bateau dessine !  %d", (long)pthread_self());
+	if((long)pthread_self() < (long)0)
 		exit(0);
 	
 	//unlock
@@ -671,6 +671,15 @@ void HandlerSIGUSR2(int sig, siginfo_t *info,void *p)
 			else
 			{
 				Trace("Badaboum");
+				reponse.setType(resultTir.getExpediteur());
+				reponse.setRequete(TIR);
+				repTir->L = reqTir.L;
+				repTir->C = reqTir.C;
+				repTir->status = COULE;
+				memcpy(&repTir->bateau, pBateau, sizeof(Bateau));
+				reponse.setData((char*)repTir,sizeof(ReponseTir));
+				connexion.SendData(reponse);
+				
 				reponse.setRequete(BATEAU_COULE);
 				for(int i = 0;i<10;i++)
 				{
@@ -682,16 +691,7 @@ void HandlerSIGUSR2(int sig, siginfo_t *info,void *p)
 					}
 				}
 				waitTime(3,0);
-				for(int i = 0;i<NB_LIGNES;i++)
-				{
-					for(int j = 0;j<NB_COLONNES;j++)
-					{
-						if(tab[i][j] == (int)pthread_self())
-						{
-							tab[i][j] = 0;
-						}
-					}
-				}
+				DessineFullBateau(pBateau, CLEAR);
 				//Si le bateau est vertical
 				if(pBateau->direction == HORIZONTAL)
 					lignes[pBateau->L] = 0;
