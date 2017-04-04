@@ -685,8 +685,11 @@ void HandlerSIGUSR2(int sig, siginfo_t *info,void *p)
 		for(int i = 0;i<10;i++)
 		{
 			//Sauf le joueur qui a coulé le bateau
-			reponse.setType(joueurs[i]);
-			connexion.SendData(reponse);
+			if((joueurs[i] != 0) && (joueurs[i] != resultTir.getExpediteur()))
+			{
+				reponse.setType(joueurs[i]);
+				connexion.SendData(reponse);
+			}
 		}
 		waitTime(3,0);
 		for(int i = 0;i<NB_LIGNES;i++)
