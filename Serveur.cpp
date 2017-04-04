@@ -669,70 +669,57 @@ void HandlerSIGUSR2(int sig, siginfo_t *info,void *p)
 		}
 		else
 		{
-			Trace("euh autre");
-			break;
-		}
-		//waitTime(2, 0);
-		
-		//delete(pBateau);
-		pthread_mutex_unlock(&comBateau->mutex);
-	}
-	reponse.setType(resultTir.getExpediteur());
-		reponse.setRequete(TIR);
-		repTir->L = reqTir.L;
-		repTir->C = reqTir.C;
-		repTir->status = COULE;
-		memcpy(&repTir->bateau, pBateau, sizeof(Bateau));
-		reponse.setData((char*)repTir,sizeof(ReponseTir));
-		connexion.SendData(reponse);
-		// Prevenir tous les autres joueurs
-		reponse.setRequete(BATEAU_COULE);
-		for(int i = 0;i<10;i++)
-		{
-			//Sauf le joueur qui a coulé le bateau
-			if((joueurs[i] != 0) && (joueurs[i] != resultTir.getExpediteur()))
+			Trace("Badaboum");
+			reponse.setRequete(BATEAU_COULE);
+			for(int i = 0;i<10;i++)
 			{
-				reponse.setType(joueurs[i]);
-				connexion.SendData(reponse);
-			}
-		}
-		for(int i = 0;i<NB_LIGNES;i++)
-		{
-			for(int j = 0;j<NB_COLONNES;i++)
-			{
-				if(tab[i][j] == (int)pthread_self())
+				//Sauf le joueur qui a coulé le bateau
+				if((joueurs[i] != 0) && (joueurs[i] != resultTir.getExpediteur()))
 				{
-					tab[i][j] = 0;
+					reponse.setType(joueurs[i]);
+					connexion.SendData(reponse);
 				}
 			}
+			for(int i = 0;i<NB_LIGNES;i++)
+			{
+				for(int j = 0;j<NB_COLONNES;i++)
+				{
+					if(tab[i][j] == (int)pthread_self())
+					{
+						tab[i][j] = 0;
+					}
+				}
+			}
+			//Si le bateau est vertical
+			if(pBateau->direction == HORIZONTAL)
+				lignes[pBateau->L] = 0;
+			else
+				colonnes[pBateau->C] = 0;
+			comBateau->tidBateau = 0;
+			comBateau->indEcriture = 0;
+			comBateau->indLecture = 0;
+			pthread_setspecific(cleComBateau,comBateau);
+			nbBateaux--;
+			switch(pBateau->type)
+			{
+				case 2:
+					nbTorpilleurs--;
+					break;
+				case 3:
+					nbDestoyers--;
+					break;
+				case 4:
+					nbCroiseurs--;
+					break;
+				case 5:
+					nbCuirasses--;
+					break;			
+			}
+			pthread_mutex_unlock(&comBateau->mutex);
+			pthread_cond_signal(&condBateaux);
+			break;
 		}
-		//Si le bateau est vertical
-		if(pBateau->direction == HORIZONTAL)
-			lignes[pBateau->L] = 0;
-		else
-			colonnes[pBateau->C] = 0;
-		comBateau->tidBateau = 0;
-		comBateau->indEcriture = 0;
-		comBateau->indLecture = 0;
-		pthread_setspecific(cleComBateau,comBateau);
-		nbBateaux--;
-		switch(pBateau->type)
-		{
-			case 2:
-				nbTorpilleurs--;
-				break;
-			case 3:
-				nbDestoyers--;
-				break;
-			case 4:
-				nbCroiseurs--;
-				break;
-			case 5:
-				nbCuirasses--;
-				break;			
-		}
-		pthread_mutex_unlock(&comBateau->mutex);
-		pthread_cond_signal(&condBateaux);
+		delete(pBateau);
 	}
 	catch(MessageQueueException e)
 	{
