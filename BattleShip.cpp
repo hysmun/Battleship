@@ -1,3 +1,10 @@
+/**********************************
+*	Programmation UNIX - Threads
+*	Equipe Brajkovic - Mauhin
+*	HEPL 2016-2017
+***********************************
+*/
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -82,7 +89,12 @@ int deplacementBateau(Bateau *pBateau);
 
 
 
-//************************************************************************************************
+/***********************************
+*
+*		Section MAIN (_main)
+*
+************************************
+*/
 int main(int argc,char* argv[])
 {
 	srand((unsigned)time(NULL));
@@ -156,7 +168,12 @@ int main(int argc,char* argv[])
 	exit(0);
 }
 
-
+/***********************************
+*
+*		Section EVENT (_event)
+*
+************************************
+*/
 void *fctThEvent(void *p)
 {
 	EVENT_GRILLE_SDL event;
@@ -224,6 +241,12 @@ void *fctThEvent(void *p)
 	pthread_exit(0);
 }
 
+/***********************************
+*
+*		Section AfficheBATEAU (_affbat)
+*
+************************************
+*/
 void *fctThAffBateau(void *p)
 {
 	sigset_t blockSet;
@@ -265,6 +288,12 @@ void *fctThAffBateau(void *p)
 	pthread_exit(0);
 }
 
+/***********************************
+*
+*		Section RECEPTION (_recep)
+*
+************************************
+*/
 void *fctThReception(void *p)
 {
 	// Bloquer les signaux
@@ -354,6 +383,12 @@ void *fctThReception(void *p)
 	pthread_exit(0);
 }
 
+/***********************************
+*
+*		Section AfficheBatCOULE (_affbatcoule)
+*
+************************************
+*/
 void *fctThAfficheBateauCoule(void *p)
 {
 	// Bloquer les signaux
@@ -397,6 +432,12 @@ void *fctThAfficheBateauCoule(void *p)
 	pthread_exit(0);
 }
 
+/***********************************
+*
+*		Section SCORE (_score)
+*
+************************************
+*/
 void *fctThScore(void *p)
 {
 	// Bloquer les signaux
@@ -427,10 +468,11 @@ void *fctThScore(void *p)
 	pthread_exit(0);
 }
 
-/*
+/***********************************
 *
-*			fctThAmiral
+*		Section AMIRAL (_ami)
 *
+************************************
 */
 void *fctThAmiral(void *p)
 {
@@ -491,10 +533,11 @@ void *fctThAmiral(void *p)
 	return NULL;
 }
 
-/*
+/***********************************
 *
-*			fctThBateau
+*		Section BATEAU (_bat)
 *
+************************************
 */
 void *fctThBateau(void *p)
 {
@@ -569,6 +612,12 @@ void *fctThBateau(void *p)
 	pthread_exit(0);
 }
 
+/***********************************
+*
+*		Section IA (_ia)
+*
+************************************
+*/
 void *fctThIA(void *)
 {
 	// Bloquer tous les signaux
@@ -603,6 +652,12 @@ void *fctThIA(void *)
 	}
 }
 
+/***********************************
+*
+*		Section POSBATEAU (_posbat)
+*
+************************************
+*/
 int searchPosBateau(Bateau *pBateau)
 {
 	if(pBateau == NULL)
@@ -669,6 +724,12 @@ int searchPosBateau(Bateau *pBateau)
 	return posOK;
 }
 
+/***********************************
+*
+*		Section DessineFullBATEAU (_dfbat)
+*
+************************************
+*/
 int DessineFullBateau(Bateau *pBateau, int opt)
 {
 	if(opt == DRAW)
@@ -707,6 +768,12 @@ int DessineFullBateau(Bateau *pBateau, int opt)
 	return 1;
 }
 
+/***********************************
+*
+*		Section DeplacementBATEAU (_depbat)
+*
+************************************
+*/
 int deplacementBateau(Bateau *pBateau)
 {
 	DessineFullBateau(pBateau, CLEAR);
@@ -753,7 +820,12 @@ int deplacementBateau(Bateau *pBateau)
 	DessineFullBateau(pBateau, DRAW);
 	return 1;
 }
-
+/***********************************
+*
+*		Section HandlerSIGUSR2 (_sigusr2)
+*
+************************************
+*/
 void HandlerSIGUSR2(int sig, siginfo_t *info,void *p)
 {
 	pthread_mutex_lock(&mutexBateau);

@@ -1,3 +1,10 @@
+/**********************************
+*	Programmation UNIX - Threads
+*	Equipe Brajkovic - Mauhin
+*	HEPL 2016-2017
+***********************************
+*/
+
 #include <unistd.h>
 #include <signal.h>
 #include <pthread.h>
@@ -65,7 +72,12 @@ pthread_mutex_t mutexCible[NB_LIGNES][NB_COLONNES];
 
 ComBateau comBateau[NB_BATEAUX];
 
-//**************************************************************
+/***********************************
+*
+*		Section MAIN (_main)
+*
+************************************
+*/
 int main(int argc,char* argv[])
 {
   srand((unsigned)time(NULL));
@@ -158,7 +170,12 @@ int main(int argc,char* argv[])
   return 0;
 }
 
-//************************************************************************************
+/***********************************
+*
+*		Section HandlerSIGINT (_sigint)
+*
+************************************
+*/
 void HandlerSIGINT(int s)
 {
   Trace("(THREAD MAIN %d) Reception SIGINT",pthread_self());
@@ -172,12 +189,11 @@ void HandlerSIGINT(int s)
   connexion.close();
 }
 
-//************************************************************************************
-
-/*
+/***********************************
 *
-*			fctThRequete
+*		Section REQUETE (_req)
 *
+************************************
 */
 void *fctThRequete(void *p)
 {
@@ -319,10 +335,11 @@ void *fctThRequete(void *p)
    pthread_exit(0);
 }
 
-/*
+/***********************************
 *
-*			fctThAmiral
+*		Section AMIRAL (_ami)
 *
+************************************
 */
 void *fctThAmiral(void *p)
 {
@@ -380,10 +397,11 @@ void *fctThAmiral(void *p)
 }
 
 
-/*
+/***********************************
 *
-*			fctThBateau
+*		Section BATEAU (_bat)
 *
+************************************
 */
 void *fctThBateau(void *p)
 {
@@ -473,6 +491,12 @@ void *fctThBateau(void *p)
 	pthread_exit(0);
 }
 
+/***********************************
+*
+*		Section POSBATEAU(_posbat)
+*
+************************************
+*/
 int searchPosBateau(Bateau *pBateau)
 {
 	if(pBateau == NULL)
@@ -539,6 +563,12 @@ int searchPosBateau(Bateau *pBateau)
 	return posOK;
 }
 
+/***********************************
+*
+*		Section DessineFullBATEAU (_dfbat)
+*
+************************************
+*/
 int DessineFullBateau(Bateau *pBateau, int opt)
 {
 	if(opt == DRAW)
@@ -577,6 +607,12 @@ int DessineFullBateau(Bateau *pBateau, int opt)
 	return 1;
 }
 
+/***********************************
+*
+*		Section DeplacementBATEAU (_depbat)
+*
+************************************
+*/
 int deplacementBateau(Bateau *pBateau)
 {
 	DessineFullBateau(pBateau, CLEAR);
@@ -624,6 +660,12 @@ int deplacementBateau(Bateau *pBateau)
 	return 1;
 }
 
+/***********************************
+*
+*		Section HandlerSIGUSR1 (_sigusr1)
+*
+************************************
+*/
 void HandlerSIGUSR1(int sig, siginfo_t *info, void *p) 
 {
 	Trace("pid emetteur : %d",info->si_pid);
@@ -632,6 +674,12 @@ void HandlerSIGUSR1(int sig, siginfo_t *info, void *p)
 	connexion.SendData(envois);
 }
 
+/***********************************
+*
+*		Section HandlerSIGUSR2 (_sigusr2)
+*
+************************************
+*/
 void HandlerSIGUSR2(int sig, siginfo_t *info,void *p)
 {
 	try
@@ -735,6 +783,12 @@ void HandlerSIGUSR2(int sig, siginfo_t *info,void *p)
 	}
 }
 
+/***********************************
+*
+*		Section AfficheMER (_affmer)
+*
+************************************
+*/
 void AfficheMer(void)
 {
 	pthread_mutex_lock(&mutexMer);
@@ -756,27 +810,4 @@ void AfficheMer(void)
 	}
 	pthread_mutex_unlock(&mutexMer);
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
