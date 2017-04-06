@@ -547,7 +547,15 @@ void *fctThBateau(void *p)
 	//construction set
 	sigfillset(&blockSet);
 	sigfillset(&unblockSet);
+	sigdelset(&unblockSet, SIGUSR1);
 	sigdelset(&unblockSet, SIGUSR2);
+	
+	//armement handler SIGUSR1
+	struct sigaction sigAct;
+	sigAct.sa_sigaction = HandlerSIGUSR1;
+	sigAct.sa_flags = SA_SIGINFO;
+	sigemptyset(&sigAct.sa_mask);
+	sigaction(SIGUSR1, &sigAct, NULL);
 	
 	// armement handler SIGUSR2
 	struct sigaction sigAct2;
@@ -562,9 +570,14 @@ void *fctThBateau(void *p)
 	for(int i = 0;(i<NB_BATEAUX) && (BatPose != 1);i++)
 	{
 		pthread_mutex_lock(&mutexComBateau[i]);
-		if(comBateau[i].tidBateau != 0)
+		if(comBateau[i].tidBateau == 0)
 		{
-			comBateau[i].tidBateau = tidSelf();
+			//Trace("Remplis la struc bateau %d", i);
+			comBateau[i].tidBateau = pthread_self();
+			comBateau[i].indEcriture= 0;
+			comBateau[i].indLecture =0;
+			pthread_mutex_init(&comBateau[i].mutex, NULL);
+			pthread_cond_init(&comBateau[i].cond, NULL);
 			BatPose = 1;
 			Place = i;
 		}
@@ -587,7 +600,9 @@ void *fctThBateau(void *p)
 		pthread_exit(0);
 	}
 	DessineFullBateau(pBateau, DRAW);
-	Trace("Bateau dessine !  %d", tidSelf());
+	Trace("Bateau dessine !  %d", (long)pthread_self());
+	if((long)pthread_self() < (long)0)
+		exit(0);
 	
 	//unlock
 	pthread_mutex_unlock(&mutexMer);
@@ -609,7 +624,7 @@ void *fctThBateau(void *p)
 		//unlock
 		pthread_mutex_unlock(&mutexMer);
 	}
-	Trace("Fin bateau !!  %d", tidSelf());
+	Trace("Fin bateau !!  %d", pthread_self());
 	pthread_exit(0);
 }
 
