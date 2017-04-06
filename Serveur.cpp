@@ -40,6 +40,7 @@ void *fctThRequete(void *);
 
 //autre fct
 int searchPosBateau(Bateau *pBateau);
+int searchPosBateau2(Bateau *pBateau);
 int DessineFullBateau(Bateau *pBateau, int opt);
 int deplacementBateau(Bateau *pBateau);
 void HandlerSIGUSR1(int sig, siginfo_t *info, void *p);
@@ -81,13 +82,13 @@ ComBateau comBateau[NB_BATEAUX];
 int main(int argc,char* argv[])
 {
   srand((unsigned)time(NULL));
-  Trace("(THREAD MAIN %d) Pid  = %d",pthread_self(),getpid());
+  Trace("(THREAD MAIN %d) Pid  = %ld",pthread_self(),getpid());
 
   // Creation file de messages
   connexion.init(1000);
 
 	// Ouverture de la fenetre graphique
-	Trace("(THREAD MAIN %d) Ouverture de la fenetre graphique",pthread_self()); fflush(stdout);
+	Trace("(THREAD MAIN %ld) Ouverture de la fenetre graphique",pthread_self()); fflush(stdout);
 	if(argc > 1 && argc < 3 && argv[1][0] == '-' && argv[1][1] == 's')
 	{
 		Trace("Sans fenetre graphique !");
@@ -152,9 +153,9 @@ int main(int argc,char* argv[])
   {
     try
     {
-      Trace("(THREAD MAIN %d) Attente d'une requete...",pthread_self());
+      Trace("(THREAD MAIN %ld) Attente d'une requete...",pthread_self());
       requete = connexion.ReceiveData(1);
-      Trace("(THREAD MAIN %d) Message Recu de : %d",pthread_self(),requete.getExpediteur());   
+      Trace("(THREAD MAIN %ld) Message Recu de : %d",pthread_self(),requete.getExpediteur());   
       pthread_create(&tid, NULL, fctThRequete, (void *)&requete);
 
       
@@ -166,7 +167,7 @@ int main(int argc,char* argv[])
     }
   }
 
-  Trace("(THREAD MAIN %d) Serveur se termine");
+  Trace("(THREAD MAIN ) Serveur se termine");
   return 0;
 }
 
@@ -178,12 +179,12 @@ int main(int argc,char* argv[])
 */
 void HandlerSIGINT(int s)
 {
-  Trace("(THREAD MAIN %d) Reception SIGINT",pthread_self());
+  Trace("(THREAD MAIN %ld) Reception SIGINT",pthread_self());
 
   // Fermeture de la grille de jeu (SDL)
-  Trace("(THREAD MAIN %d) Fermeture de la fenetre graphique...",pthread_self()); fflush(stdout);
+  Trace("(THREAD MAIN %ld) Fermeture de la fenetre graphique...",pthread_self()); fflush(stdout);
   FermetureFenetreGraphique();
-  Trace("(THREAD MAIN %d) OK Fin",pthread_self()); //fflush(stdout);
+  Trace("(THREAD MAIN %ld) OK Fin",pthread_self()); //fflush(stdout);
 
   // Suppression de la file de messages
   connexion.close();
@@ -283,7 +284,7 @@ void *fctThRequete(void *p)
 						}
 						if(ShipFound == 1)
 						{
-							Trace("envois signal  %d", comBateau[i-1].tidBateau);
+							Trace("envois signal  %ld", comBateau[i-1].tidBateau);
 							pthread_kill(comBateau[i-1].tidBateau,SIGUSR2);
 							//DessineExplosion(reqTir.L,reqTir.C,ORANGE);
 							//pthread_kill(tab[reqTir.L][reqTir.C], SIGUSR2);
@@ -355,14 +356,14 @@ void *fctThAmiral(void *p)
 	sigset_t maskAll;
 	sigfillset(&maskAll);
 	sigprocmask(SIG_SETMASK, &maskAll,NULL);
-	AfficheMer();
+	//AfficheMer();
 	while(1)
 	{
 		pthread_mutex_lock(&mutexBateau);
 		while(nbBateaux >= NB_BATEAUX)
 			pthread_cond_wait(&condBateaux, &mutexBateau);
 		//mutex pris
-		Trace("Amiral cree un bateau !");
+		//Trace("Amiral cree un bateau !");
 		pBateau = (Bateau *)malloc(sizeof(Bateau));
 		if(nbCroiseurs < NB_CROISEURS)
 		{
@@ -463,20 +464,18 @@ void *fctThBateau(void *p)
 	Bateau *pBateau = (Bateau *)p;
 	pthread_setspecific(cleBateau, (void*)pBateau);
 	
-	if(searchPosBateau(pBateau) == 0)
+	if(searchPosBateau2(pBateau) == 0)
 	{
 		Trace("Erreur search pos bateau !!");
 		pthread_exit(0);
 	}
 	DessineFullBateau(pBateau, DRAW);
-	Trace("Bateau dessine !  %d", (long)pthread_self());
-	if((long)pthread_self() < (long)0)
-		exit(0);
+	Trace("Bateau dessine !  %ld", (long)pthread_self());
 	
 	//unlock
 	pthread_mutex_unlock(&mutexMer);
 	
-	//AfficheMer();
+	AfficheMer();
 	
 	while(1)
 	{
@@ -493,7 +492,7 @@ void *fctThBateau(void *p)
 		//unlock
 		pthread_mutex_unlock(&mutexMer);
 	}
-	Trace("Fin bateau !!  %d", pthread_self());
+	Trace("Fin bateau !!  %ld", pthread_self());
 	pthread_exit(0);
 }
 
@@ -690,7 +689,7 @@ void HandlerSIGUSR2(int sig, siginfo_t *info,void *p)
 {
 	try
 	{
-		Trace("Entree SIGUSR2 je suis %d", pthread_self());
+		Trace("Entree SIGUSR2 je suis %ld", pthread_self());
 		Message resultTir,reponse;
 		RequeteTir reqTir;
 		ReponseTir *repTir = (ReponseTir *)malloc(sizeof(ReponseTir));
@@ -816,4 +815,92 @@ void AfficheMer(void)
 	}
 	pthread_mutex_unlock(&mutexMer);
 }
+
+int searchPosBateau2(Bateau *pBateau)
+{
+	if(pBateau == NULL)
+	{
+		Trace("Erreur param searchBateau");
+		pthread_exit(0);
+	}
+	Position pos[NB_COLONNES*NB_LIGNES];
+	int posOK=0, tmpRand;
+	int i, j,k, posMax=0;
+	if(pBateau->direction == HORIZONTAL)
+	{	
+		//horizontal
+		rand()%2 ? pBateau->sens = DROITE: pBateau->sens = GAUCHE;
+		for(i=0; i<NB_COLONNES; i++)
+		{
+			if(colonnes[i] == 0)
+				for(j=0;j<NB_LIGNES; j++)
+				{
+					for(k=0; k<pBateau->type; k++)
+					{
+						//
+						if(tab[(j+k)%NB_LIGNES][i] == 0)
+							posOK +=1;
+						else
+							posOK=0;
+					}
+					if(posOK == pBateau->type)
+					{
+						pos[posMax].L = j;
+						pos[posMax].C = i;
+						posMax++;
+					}
+					posOK = 0;	
+				}
+			posOK =0;
+		}
+	}
+	if(pBateau->direction == VERTICAL)
+	{	
+		//horizontal
+		rand()%2 ? pBateau->sens = BAS: pBateau->sens = HAUT;
+		for(i=0; i<NB_LIGNES; i++)
+		{
+			if(lignes[i] == 0)
+				for(j=0;j<NB_COLONNES; j++)
+				{
+					for(k=0; k<pBateau->type; k++)
+					{
+						//
+						if(tab[i][(j+k)%NB_COLONNES] == 0)
+							posOK +=1;
+						else
+						{
+							posOK = 0;
+							break;
+						}
+					}
+					if(posOK == pBateau->type)
+					{
+						pos[posMax].L = i;
+						pos[posMax].C = j;
+						posMax++;
+					}
+					posOK = 0;	
+				}	
+			posOK=0;
+		}
+	}
+	if(posMax < 1)
+	{
+		Trace("Erreur search pos!!");
+		return 0;
+	}
+	
+	tmpRand = (rand()%posMax);
+	
+	pBateau->L = pos[tmpRand].L;
+	pBateau->C = pos[tmpRand].C;
+	pBateau->direction == HORIZONTAL ? lignes[pBateau->L] = 1: colonnes[pBateau->C] = 1;
+	Trace("Pos choisie %d - %d ", pBateau->L,	pBateau->C);
+	return 1;
+}
+
+
+
+
 

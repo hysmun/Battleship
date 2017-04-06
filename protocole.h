@@ -29,6 +29,12 @@ struct RequeteTir
   int C;
 };
 
+struct Position
+{
+  int L;
+  int C;
+};
+
 struct ReponseTir
 {
   int L;
