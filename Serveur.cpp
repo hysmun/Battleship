@@ -249,7 +249,9 @@ void *fctThRequete(void *p)
 			memcpy(&reqTir,requete.getData(),sizeof(RequeteTir)); // on recupere le contenu du message
 			reponse.setType(requete.getExpediteur()); // Retour a l'expediteur
 			reponse.setRequete(TIR); // pour prevnir que c'est une reponse a une requete de tir
-			repTir.status = PLOUF;
+			repTir.status = ERREUR;
+			repTir.L = reqTir.L;
+			repTir.C = reqTir.C;
 			if(pthread_mutex_trylock(&mutexCible[reqTir.L][reqTir.C]) == 0)
 			{
 				waitTime(5, 0);
@@ -301,12 +303,16 @@ void *fctThRequete(void *p)
 					else
 					{
 						Trace("Bateau deja toucher");
+						repTir.L = reqTir.L;
+						repTir.C = reqTir.C;
 						repTir.status = DEJA_TOUCHE;
 					}
 				}
 				else 
 				{
-					Trace("Plouf !!");
+					Trace("Plouf !! ");
+					repTir.L = reqTir.L;
+					repTir.C = reqTir.C;
 					repTir.status = PLOUF;
 				}
 				pthread_mutex_unlock(&mutexMer);

@@ -53,6 +53,7 @@ struct ComBateau
 #define TOUCHE       3  // si bateau touche en (L,C) mais non coule
 #define DEJA_TOUCHE  4  // si bateau deja touche en (L,C) par un autre joueur (et forcement pas coule)
 #define COULE        5  // si bateau touche en (L,C) et coule
+#define ERREUR 		100
 
 #define DRAW 0
 #define CLEAR 1

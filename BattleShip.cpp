@@ -325,9 +325,9 @@ void *fctThReception(void *p)
 				switch(tmpRepTir.status)
 				{
 					case PLOUF:
-						Trace("Plouf");
+						Trace("Plouf !!  ");
 						pthread_mutex_lock(&mutexTabTir);
-						EffaceCarre(tmpRepTir.L,tmpRepTir.C);
+						EffaceCarre(tmpRepTir.L+11,tmpRepTir.C);
 						tabTir[tmpRepTir.L][tmpRepTir.C] = 0;
 						pthread_mutex_unlock(&mutexTabTir);
 						break;
@@ -373,6 +373,7 @@ void *fctThReception(void *p)
 			}
 			case BATEAU_COULE:
 				Trace("Bateau coule !!");
+				memcpy(&tmpRepTir, requete.getData(), sizeof(ReponseTir));
 				pthread_create(&tid, NULL, fctThAfficheBateauCoule, &(tmpRepTir.bateau));
 				break;
 			default:
