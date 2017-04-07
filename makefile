@@ -14,7 +14,7 @@ ALL: $(PROGRAMS)
 
 BattleShip:	BattleShip.cpp protocole.h $(OBJS)
 	echo Creation de BattleShip...
-	$(CC) BattleShip.cpp -o BattleShip $(OBJS) -lrt -lpthread -lSDL
+	$(CC) BattleShip.cpp -o BattleShip $(OBJS) -lrt -lpthread -lSDL -lm
 
 Serveur:	Serveur.cpp protocole.h $(OBJS)
 		echo Creation de Serveur...
