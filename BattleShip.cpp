@@ -263,11 +263,23 @@ void *fctThAffBateau(void *p)
 	{
 		if(pBateau->direction == HORIZONTAL)
 		{
+			EffaceCarre(pBateau->L%NB_LIGNES+11, (pBateau->C+i)%NB_COLONNES);
 			DessineBateau(pBateau->L%NB_LIGNES+11, (pBateau->C+i)%NB_COLONNES, pBateau->type, HORIZONTAL,i);
+			
+			if(tabTir[pBateau->L%NB_LIGNES][pBateau->C] == TOUCHE)
+				DessineExplosion(pBateau->L%NB_LIGNES+11, pBateau->C, ORANGE);
+			if(tabTir[pBateau->L%NB_LIGNES][pBateau->C] == DEJA_TOUCHE)
+				DessineExplosion(pBateau->L%NB_LIGNES+11, pBateau->C, BLEU);
 		}
 		else
 		{
+			EffaceCarre(pBateau->L%NB_LIGNES+11, (pBateau->C+i)%NB_COLONNES);
 			DessineBateau((pBateau->L+i)%NB_LIGNES+11, pBateau->C%NB_COLONNES, pBateau->type, VERTICAL,i);
+			
+			if(tabTir[(pBateau->L+i)%NB_LIGNES][pBateau->C] == TOUCHE)
+				DessineExplosion((pBateau->L+i)%NB_LIGNES+11, pBateau->C, ORANGE);
+			if(tabTir[pBateau->L][pBateau->C] == DEJA_TOUCHE)
+				DessineExplosion((pBateau->L+i)%NB_LIGNES+11, pBateau->C, BLEU);
 		}
 	}
 	//attente 4 second
@@ -278,11 +290,22 @@ void *fctThAffBateau(void *p)
 		if(pBateau->direction == HORIZONTAL)
 		{
 			EffaceCarre(pBateau->L%NB_LIGNES+11, (pBateau->C+i)%NB_COLONNES);
+			
+			if(tabTir[pBateau->L%NB_LIGNES][pBateau->C] == TOUCHE)
+				DessineExplosion(pBateau->L%NB_LIGNES+11, pBateau->C, ORANGE);
+			if(tabTir[pBateau->L%NB_LIGNES][pBateau->C] == DEJA_TOUCHE)
+				DessineExplosion(pBateau->L%NB_LIGNES+11, pBateau->C, BLEU);
 		}
 		else
 		{
 			EffaceCarre((pBateau->L+i)%NB_LIGNES+11, pBateau->C%NB_COLONNES);
+			
+			if(tabTir[(pBateau->L+i)%NB_LIGNES][pBateau->C] == TOUCHE)
+				DessineExplosion((pBateau->L+i)%NB_LIGNES+11, pBateau->C, ORANGE);
+			if(tabTir[pBateau->L][pBateau->C] == DEJA_TOUCHE)
+				DessineExplosion((pBateau->L+i)%NB_LIGNES+11, pBateau->C, BLEU);
 		}
+		
 	}
 	waitTime(30, 0);
 	flagSousMarin = 1;
@@ -336,6 +359,7 @@ void *fctThReception(void *p)
 						Trace("Touche  pos :   %d   --   %d  ",tmpRepTir.L+11, tmpRepTir.C );
 						EffaceCarre(tmpRepTir.L+11, tmpRepTir.C);
 						DessineExplosion(tmpRepTir.L+11, tmpRepTir.C, ORANGE);
+						tabTir[tmpRepTir.L][tmpRepTir.C] = TOUCHE;
 						pthread_mutex_lock(&mutexScore);
 						score+=1;
 						MAJScore=1;
@@ -346,6 +370,7 @@ void *fctThReception(void *p)
 						Trace("Deja Touche");
 						EffaceCarre(tmpRepTir.L+11, tmpRepTir.C);
 						DessineExplosion(tmpRepTir.L+11, tmpRepTir.C, BLEU);
+						tabTir[tmpRepTir.L][tmpRepTir.C] = DEJA_TOUCHE;
 						break;
 					case LOCKED:
 						Trace("locked");

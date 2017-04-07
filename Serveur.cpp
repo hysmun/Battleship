@@ -627,7 +627,7 @@ int deplacementBateau(Bateau *pBateau)
 		if(pBateau->sens == DROITE)
 			// Detection obstacle
 			if(tab[pBateau->L][(pBateau->C + pBateau->type)%NB_COLONNES] != 0)
-				pBateau->sens = GAUCHE;
+				rand()%3 ? pBateau->sens = DROITE :pBateau->sens = GAUCHE;
 			else
 				pBateau->C = (pBateau->C + 1)%NB_COLONNES;
 		else
@@ -637,7 +637,7 @@ int deplacementBateau(Bateau *pBateau)
 			else
 				tmp = pBateau->C -1;
 			if(tab[pBateau->L][(tmp)%NB_COLONNES] != 0)
-				pBateau->sens = DROITE; 
+				rand()%3 ? pBateau->sens = GAUCHE :pBateau->sens = DROITE;
 			else
 				pBateau->C = (tmp)%NB_COLONNES;
 		}
@@ -646,7 +646,7 @@ int deplacementBateau(Bateau *pBateau)
 	{
 		if(pBateau->sens == BAS)
 			if(tab[(pBateau->L + pBateau->type)%NB_LIGNES][pBateau->C] != 0)
-				pBateau->sens = HAUT;
+				rand()%3 ? pBateau->sens = BAS :pBateau->sens = HAUT;
 			else
 				pBateau->L = (pBateau->L + 1)%NB_LIGNES;
 		else
@@ -656,7 +656,7 @@ int deplacementBateau(Bateau *pBateau)
 			else
 				tmp = pBateau->L -1;
 			if(tab[(tmp)%NB_LIGNES][pBateau->C] != 0)
-				pBateau->sens = BAS;
+				rand()%3 ? pBateau->sens = HAUT :pBateau->sens = BAS;
 			else
 				pBateau->L = (tmp)%NB_LIGNES;
 		}
