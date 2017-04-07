@@ -86,6 +86,7 @@ void HandlerSIGUSR2(int sig, siginfo_t *info, void *p);
 int searchPosBateau(Bateau *pBateau);
 int DessineFullBateau(Bateau *pBateau, int opt);
 int deplacementBateau(Bateau *pBateau);
+int searchPosBateau2(Bateau *pBateau);
 
 
 
@@ -586,7 +587,7 @@ void *fctThBateau(void *p)
 	Bateau *pBateau = (Bateau *)p;
 	pthread_setspecific(cleBateau, (void*)pBateau);
 	
-	if(searchPosBateau(pBateau) == 0)
+	if(searchPosBateau2(pBateau) == 0)
 	{
 		Trace("Erreur search pos bateau !!");
 		pthread_exit(0);
@@ -926,7 +927,96 @@ void HandlerSIGUSR2(int sig, siginfo_t *info,void *p)
 }
 
 
-
+int searchPosBateau2(Bateau *pBateau)
+{
+	if(pBateau == NULL)
+	{
+		Trace("Erreur param searchBateau");
+		pthread_exit(0);
+	}
+	Position pos[NB_COLONNES*NB_LIGNES];
+	int posOK=0, tmpRand;
+	int i, j, k, posMax=0;
+	if(pBateau->direction == HORIZONTAL)
+	{	
+		//horizontal
+		rand()%2 ? pBateau->sens = DROITE: pBateau->sens = GAUCHE;
+		for(i=0; i<NB_LIGNES; i++)
+		{
+			if(lignes[i] == 0)
+			{
+				for(j=0;j<NB_COLONNES; j++)
+				{
+					for(k=0; k<pBateau->type; k++)
+					{
+						//
+						if(tab[i][(j+k)%NB_COLONNES] == 0)
+							posOK +=1;
+						else
+						{
+							posOK = 0;
+							k = pBateau->type + 2;
+						}
+					}
+					if(posOK == pBateau->type)
+					{
+						pos[posMax].L = i;
+						pos[posMax].C = j;
+						posMax++;
+					}
+					posOK = 0;	
+				}	
+			}
+			posOK=0;
+		}
+	}
+	if(pBateau->direction == VERTICAL)
+	{	
+		//vertical
+		rand()%2 ? pBateau->sens = BAS: pBateau->sens = HAUT;
+		for(i=0; i<NB_COLONNES; i++)
+		{
+			if(colonnes[i] == 0)
+			{
+				for(j=0;j<NB_LIGNES; j++)
+				{
+					for(k=0; k<pBateau->type; k++)
+					{
+						//
+						if(tab[(j+k)%NB_LIGNES][i] == 0)
+							posOK +=1;
+						else
+						{
+							posOK=0;
+							k = pBateau->type + 2 ;
+						}
+					}
+					if(posOK == pBateau->type)
+					{
+						pos[posMax].L = j;
+						pos[posMax].C = i;
+						posMax++;
+					}
+					posOK = 0;	
+				}
+			}
+			posOK =0;
+		}
+	}
+	if(posMax < 1)
+	{
+		Trace("Erreur search pos!!");
+		return 0;
+	}
+	
+	tmpRand = (rand()%posMax);
+	
+	pBateau->L = pos[tmpRand].L;
+	pBateau->C = pos[tmpRand].C;
+	pBateau->direction == HORIZONTAL ? lignes[pBateau->L] = 1: colonnes[pBateau->C] = 1;
+	Trace("Pos choisie %d - %d      %d", pBateau->L,	pBateau->C, posMax);
+	return 1;
+}
 
 
 
