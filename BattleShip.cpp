@@ -64,9 +64,13 @@ pthread_mutex_t mutexBateau;
 pthread_cond_t condBateaux;
 pthread_mutex_t mutexComBateau[NB_BATEAUX];
 pthread_mutex_t mutexMer;
+pthread_mutex_t mutexSyncro;
+pthread_cond_t condSyncro;
 
 int score = 0;
 int MAJScore = 1;
+int syncroJoueur = 3;
+int syncroIA = 0;
 
 MessageQueue  connexion;  // File de messages
 
@@ -144,6 +148,8 @@ int main(int argc,char* argv[])
 	pthread_mutex_init(&mutexMer,NULL);
 	pthread_mutex_init(&mutexBateau, NULL);	
 	pthread_cond_init(&condBateaux, NULL);
+	pthread_mutex_init(&mutexSyncro, NULL);	
+	pthread_cond_init(&condSyncro, NULL);
 	
 	//clé variable spécifique
   	pthread_key_create(&cleBateau, NULL);
@@ -159,6 +165,8 @@ int main(int argc,char* argv[])
 	pthread_create(&tidScore, NULL, fctThScore, NULL);
 	pthread_create(&tidAmiral, NULL, fctThAmiral, NULL);
 	pthread_create(&tidIA, NULL, fctThIA, NULL);
+	
+	DessineFleche(10, 4, VERT);
 	
 	pthread_join(tidEvent, NULL);
 	// Fermeture de la grille de jeu (SDL)
@@ -207,9 +215,12 @@ void *fctThEvent(void *p)
 				}
 				pthread_mutex_unlock(&mutexScore);
 				pthread_cond_signal(&condScore);
-				if(event.ligne > 10)
+				
+				pthread_mutex_lock(&mutexSyncro);
+				if(event.ligne > 10 && syncroJoueur != 0)
 				{
 					Trace("Demande de tir !");
+					DessineMissiles(10, 3, 4-syncroJoueur);
 					pthread_mutex_lock(&mutexTabTir);
 					if(tabTir[event.ligne-11][event.colonne] != 0)
 					{
@@ -230,7 +241,12 @@ void *fctThEvent(void *p)
 						
 					}
 					pthread_mutex_unlock(&mutexTabTir);
+					syncroJoueur--;
 				}
+				
+				
+				pthread_mutex_unlock(&mutexSyncro);
+				pthread_cond_signal(&condSyncro);
 				break;
 			}
 			default:
@@ -395,6 +411,15 @@ void *fctThReception(void *p)
 						Trace("Erreur switch reponse tir");
 						break;
 				}
+				pthread_mutex_lock(&mutexSyncro);
+				if(syncroJoueur == 0)
+				{
+					syncroIA = 3;
+					EffaceCarre(10, 3);
+					DessineFleche(10, 4, ROUGE);
+				}
+				pthread_mutex_unlock(&mutexSyncro);
+				pthread_cond_signal(&condSyncro);
 				break;
 			}
 			case BATEAU_COULE:
@@ -664,6 +689,13 @@ void *fctThIA(void *)
 	int targetForTermination = 0;
 	while(1)
 	{
+		pthread_mutex_lock(&mutexSyncro);
+		while(syncroIA == 0)
+			pthread_cond_wait(&condSyncro, &mutexSyncro);
+		DessineMissiles(10, 6, 4-syncroIA);
+		//syncroIA--;
+		pthread_mutex_unlock(&mutexSyncro);
+		
 		waitTime(4, 0);
 		pthread_mutex_lock(&mutexMer);
 		//selection case tir
@@ -761,6 +793,16 @@ void *fctThIA(void *)
 			pthread_mutex_unlock(&mutexBateau);
 		}
 		pthread_mutex_unlock(&mutexMer);
+		pthread_mutex_lock(&mutexSyncro);
+		syncroIA--;
+		if(syncroIA == 0)
+		{
+			syncroJoueur = 3;
+			EffaceCarre(10, 6);
+			DessineFleche(10, 4, VERT);
+		}
+		pthread_mutex_unlock(&mutexSyncro);
+		pthread_cond_signal(&condSyncro);
 	}
 }
 
