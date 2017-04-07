@@ -660,19 +660,57 @@ void *fctThIA(void *)
 	Message repMes;
 	ReponseTir repTir;
 	int selectedI, selectedJ;
+	int tentatives = 0;
+	int targetForTermination = 0;
 	while(1)
 	{
 		waitTime(4, 0);
 		pthread_mutex_lock(&mutexMer);
 		//selection case tir
-		selectedI = rand()%(NB_LIGNES);
-		selectedJ = rand()%(NB_COLONNES);
-		while(tab[selectedI][selectedJ] < 0)
+		int L = 0, C = 0;
+		if(targetForTermination != 0)
+		{
+			for(L = 0;L<NB_LIGNES;L++)
+			{
+				for(C = 0;C<NB_COLONNES;C++)
+				{
+					if(tab[L][C] == targetForTermination)
+					{
+						selectedI = L;
+						selectedJ = C;
+						DessineCible(selectedI,selectedJ);
+					}
+				}
+			}
+			if((L == NB_LIGNES) && (C == NB_COLONNES))
+				targetForTermination = 0;
+		}
+		if((tentatives < 20) && (targetForTermination == 0))
 		{
 			selectedI = rand()%(NB_LIGNES);
 			selectedJ = rand()%(NB_COLONNES);
+			while(tab[selectedI][selectedJ] < 0)
+			{
+				selectedI = rand()%(NB_LIGNES);
+				selectedJ = rand()%(NB_COLONNES);
+			}
+			DessineCible(selectedI, selectedJ);
 		}
-		DessineCible(selectedI, selectedJ);
+		else if(tentatives == 20)
+		{
+			for(int tirAutoL = 0;tirAutoL<NB_LIGNES;tirAutoL++)
+			{
+				for(int tirAutoC = 0;tirAutoC<NB_COLONNES;tirAutoC++)
+				{
+					if(tab[tirAutoL][tirAutoC] > 0)
+					{
+						selectedI = tirAutoL;
+						selectedJ = tirAutoC;
+						DessineCible(selectedI,selectedJ);
+					}
+				}
+			}
+		}
 		//attente 1 seconde
 		waitTime(1, 0);
 		
@@ -681,12 +719,14 @@ void *fctThIA(void *)
 			//pas toucher
 			Trace(" IA Missed");
 			EffaceCarre(selectedI, selectedJ);
+			tentatives++;
 		}
 		if(tab[selectedI][selectedJ] > 0)
 		{
 			//prevenir bateau
 			Trace("IA Hit ");
 			repTir.status = TOUCHE;
+			tentatives = 0;
 			repTir.L = selectedI;
 			repTir.C = selectedJ;
 			repMes.setType(getpid());
@@ -703,7 +743,7 @@ void *fctThIA(void *)
 					pthread_mutex_lock(&mutexComBateau[i]);
 					comBateau[i].Requete[comBateau[i].indEcriture] = repMes;
 					comBateau[i].indEcriture++;
-					
+					targetForTermination = comBateau[i].tidBateau;
 					pthread_mutex_unlock(&mutexComBateau[i]);
 					pthread_cond_signal(&comBateau[i].cond);
 					//Trace("fin test %d", tab[reqTir.L][reqTir.C]);
@@ -720,7 +760,6 @@ void *fctThIA(void *)
 			}
 			pthread_mutex_unlock(&mutexBateau);
 		}
-		
 		pthread_mutex_unlock(&mutexMer);
 	}
 }
