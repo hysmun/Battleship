@@ -22,9 +22,9 @@
 #define NB_COLONNES 10
 
 
-#define NB_CROISEURS 2
+#define NB_CROISEURS 4
 #define NB_DESTOYERS 5
-#define NB_CUIRASSES 2
+#define NB_CUIRASSES 3
 #define NB_TORPILLEURS 4
 
 #define NB_BATEAUX (NB_CROISEURS + NB_CUIRASSES + NB_DESTOYERS + NB_TORPILLEURS)
@@ -838,39 +838,6 @@ int searchPosBateau2(Bateau *pBateau)
 	{	
 		//horizontal
 		rand()%2 ? pBateau->sens = DROITE: pBateau->sens = GAUCHE;
-		for(i=0; i<NB_COLONNES; i++)
-		{
-			if(colonnes[i] == 0)
-			{
-				for(j=0;j<NB_LIGNES; j++)
-				{
-					for(k=0; k<pBateau->type; k++)
-					{
-						//
-						if(tab[(j+k)%NB_LIGNES][i] == 0)
-							posOK +=1;
-						else
-						{
-							posOK=0;
-							k = pBateau->type + 2 ;
-						}
-					}
-					if(posOK == pBateau->type)
-					{
-						pos[posMax].L = j;
-						pos[posMax].C = i;
-						posMax++;
-					}
-					posOK = 0;	
-				}
-			}
-			posOK =0;
-		}
-	}
-	if(pBateau->direction == VERTICAL)
-	{	
-		//horizontal
-		rand()%2 ? pBateau->sens = BAS: pBateau->sens = HAUT;
 		for(i=0; i<NB_LIGNES; i++)
 		{
 			if(lignes[i] == 0)
@@ -898,6 +865,39 @@ int searchPosBateau2(Bateau *pBateau)
 				}	
 			}
 			posOK=0;
+		}
+	}
+	if(pBateau->direction == VERTICAL)
+	{	
+		//vertical
+		rand()%2 ? pBateau->sens = BAS: pBateau->sens = HAUT;
+		for(i=0; i<NB_COLONNES; i++)
+		{
+			if(colonnes[i] == 0)
+			{
+				for(j=0;j<NB_LIGNES; j++)
+				{
+					for(k=0; k<pBateau->type; k++)
+					{
+						//
+						if(tab[(j+k)%NB_LIGNES][i] == 0)
+							posOK +=1;
+						else
+						{
+							posOK=0;
+							k = pBateau->type + 2 ;
+						}
+					}
+					if(posOK == pBateau->type)
+					{
+						pos[posMax].L = j;
+						pos[posMax].C = i;
+						posMax++;
+					}
+					posOK = 0;	
+				}
+			}
+			posOK =0;
 		}
 	}
 	if(posMax < 1)
