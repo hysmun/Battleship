@@ -642,21 +642,25 @@ void *fctThIA(void *)
 		//selection case tir
 		selectedI = rand()%(NB_LIGNES);
 		selectedJ = rand()%(NB_COLONNES);
+		while(tab[selectedI][selectedJ] < 0)
+		{
+			selectedI = rand()%(NB_LIGNES);
+			selectedJ = rand()%(NB_COLONNES);
+		}
 		DessineCible(selectedI, selectedJ);
-		//attente 1 second
+		//attente 1 seconde
 		waitTime(1, 0);
 		
 		if(tab[selectedI][selectedJ] == 0)
 		{
 			//pas toucher
-			Trace(" IA  Pas toucher");
+			Trace(" IA Missed");
 			EffaceCarre(selectedI, selectedJ);
 		}
 		if(tab[selectedI][selectedJ] > 0)
 		{
-			// ************************************************* A FAIRE !!!!
 			//prevenir bateau
-			Trace("IA toucher ");
+			Trace("IA Hit ");
 			repTir.status = TOUCHE;
 			repTir.L = selectedI;
 			repTir.C = selectedJ;
