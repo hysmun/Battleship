@@ -94,6 +94,7 @@ MessageQueue& MessageQueue::operator=(const MessageQueue& mq)
 {
   id = mq.id;
   createur = false;
+  return *this;
 }
 
 //**************************************************************************************

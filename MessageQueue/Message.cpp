@@ -47,6 +47,7 @@ Message& Message::operator=(const Message& m)
   expediteur = m.getExpediteur();
   setRequete(m.getRequete());
   setData(m.getData(),m.getNbBytes());
+  return *this;
 }
 
 //**************************************************************************************
