@@ -420,13 +420,13 @@ void *fctThAfficheBateauCoule(void *p)
 	{
 		if(pBateau.direction == HORIZONTAL)
 		{
-			tabTir[pBateau.L%NB_LIGNES+11][(pBateau.C+i)%NB_COLONNES] = 0;
-			EffaceCarre(pBateau.L%NB_LIGNES+11,(pBateau.C+i)%NB_COLONNES);
+			tabTir[(pBateau.L%NB_LIGNES)][(pBateau.C+i)%NB_COLONNES] = 0;
+			EffaceCarre((pBateau.L%NB_LIGNES)+11,(pBateau.C+i)%NB_COLONNES);
 		}
 		else
 		{
-			tabTir[(pBateau.L+i)%NB_LIGNES+11][pBateau.C%NB_COLONNES] = 0;
-			EffaceCarre((pBateau.L+i)%NB_LIGNES+11,pBateau.C%NB_COLONNES);
+			tabTir[((pBateau.L+i)%NB_LIGNES)][pBateau.C%NB_COLONNES] = 0;
+			EffaceCarre(((pBateau.L+i)%NB_LIGNES)+11,pBateau.C%NB_COLONNES);
 		}
 	}
 	pthread_mutex_unlock(&mutexTabTir);

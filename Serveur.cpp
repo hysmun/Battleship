@@ -23,8 +23,8 @@
 
 
 #define NB_CROISEURS 2
-#define NB_DESTOYERS 3
-#define NB_CUIRASSES 1
+#define NB_DESTOYERS 5
+#define NB_CUIRASSES 2
 #define NB_TORPILLEURS 4
 
 #define NB_BATEAUX (NB_CROISEURS + NB_CUIRASSES + NB_DESTOYERS + NB_TORPILLEURS)
@@ -475,7 +475,7 @@ void *fctThBateau(void *p)
 	//unlock
 	pthread_mutex_unlock(&mutexMer);
 	
-	AfficheMer();
+	//AfficheMer();
 	
 	while(1)
 	{
@@ -744,6 +744,14 @@ void HandlerSIGUSR2(int sig, siginfo_t *info,void *p)
 					}
 				}
 				waitTime(3,0);
+				for(int i = 0; i< pBateau->type; i++)
+				{
+					if(pBateau->direction == HORIZONTAL)
+						pthread_mutex_unlock(&mutexCible[(pBateau->L)][(pBateau->C+i)%NB_COLONNES]);
+					else
+						pthread_mutex_unlock(&mutexCible[(pBateau->L+i)%NB_LIGNES][(pBateau->C)]);
+				}
+				
 				DessineFullBateau(pBateau, CLEAR);
 				//Si le bateau est vertical
 				if(pBateau->direction == HORIZONTAL)
@@ -825,7 +833,7 @@ int searchPosBateau2(Bateau *pBateau)
 	}
 	Position pos[NB_COLONNES*NB_LIGNES];
 	int posOK=0, tmpRand;
-	int i, j,k, posMax=0;
+	int i, j, k, posMax=0;
 	if(pBateau->direction == HORIZONTAL)
 	{	
 		//horizontal
@@ -833,6 +841,7 @@ int searchPosBateau2(Bateau *pBateau)
 		for(i=0; i<NB_COLONNES; i++)
 		{
 			if(colonnes[i] == 0)
+			{
 				for(j=0;j<NB_LIGNES; j++)
 				{
 					for(k=0; k<pBateau->type; k++)
@@ -841,7 +850,10 @@ int searchPosBateau2(Bateau *pBateau)
 						if(tab[(j+k)%NB_LIGNES][i] == 0)
 							posOK +=1;
 						else
+						{
 							posOK=0;
+							k = pBateau->type + 2 ;
+						}
 					}
 					if(posOK == pBateau->type)
 					{
@@ -851,6 +863,7 @@ int searchPosBateau2(Bateau *pBateau)
 					}
 					posOK = 0;	
 				}
+			}
 			posOK =0;
 		}
 	}
@@ -861,6 +874,7 @@ int searchPosBateau2(Bateau *pBateau)
 		for(i=0; i<NB_LIGNES; i++)
 		{
 			if(lignes[i] == 0)
+			{
 				for(j=0;j<NB_COLONNES; j++)
 				{
 					for(k=0; k<pBateau->type; k++)
@@ -871,7 +885,7 @@ int searchPosBateau2(Bateau *pBateau)
 						else
 						{
 							posOK = 0;
-							break;
+							k = pBateau->type + 2;
 						}
 					}
 					if(posOK == pBateau->type)
@@ -882,6 +896,7 @@ int searchPosBateau2(Bateau *pBateau)
 					}
 					posOK = 0;	
 				}	
+			}
 			posOK=0;
 		}
 	}
@@ -896,7 +911,7 @@ int searchPosBateau2(Bateau *pBateau)
 	pBateau->L = pos[tmpRand].L;
 	pBateau->C = pos[tmpRand].C;
 	pBateau->direction == HORIZONTAL ? lignes[pBateau->L] = 1: colonnes[pBateau->C] = 1;
-	Trace("Pos choisie %d - %d ", pBateau->L,	pBateau->C);
+	Trace("Pos choisie %d - %d      %d", pBateau->L,	pBateau->C, posMax);
 	return 1;
 }
 
