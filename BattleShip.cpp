@@ -35,6 +35,7 @@
 // Tableau de jeu (mer)
 long tab[NB_LIGNES][NB_COLONNES]={{0}};
 long tabTir[NB_LIGNES][NB_COLONNES]={{0}};
+int tabTirIA[NB_LIGNES][NB_COLONNES]={{0}};
 int lignes[NB_LIGNES]={0};
 int colonnes[NB_COLONNES]={0};
 
@@ -699,6 +700,8 @@ void *fctThIA(void *)
 		waitTime(4, 0);
 		pthread_mutex_lock(&mutexMer);
 		//selection case tir
+		
+		//debut IA
 		int L = 0, C = 0;
 		if(targetForTermination != 0)
 		{
@@ -742,7 +745,10 @@ void *fctThIA(void *)
 					}
 				}
 			}
-		}
+}
+		
+		// fin IA
+		
 		//attente 1 seconde
 		waitTime(1, 0);
 		
@@ -752,6 +758,11 @@ void *fctThIA(void *)
 			Trace(" IA Missed");
 			EffaceCarre(selectedI, selectedJ);
 			tentatives++;
+		}
+		if(tab[selectedI][selectedJ] < 0)
+		{
+			//deja toucher
+			Trace("position deja toucher");
 		}
 		if(tab[selectedI][selectedJ] > 0)
 		{
@@ -785,13 +796,11 @@ void *fctThIA(void *)
 			{
 				Trace("envois signal  %ld", comBateau[i-1].tidBateau);
 				pthread_kill(comBateau[i-1].tidBateau,SIGUSR2);
-				//DessineExplosion(reqTir.L,reqTir.C,ORANGE);
-				//pthread_kill(tab[reqTir.L][reqTir.C], SIGUSR2);
-				//Trace("test");
 				tab[selectedI][selectedJ] = -tab[selectedI][selectedJ];
 			}
 			pthread_mutex_unlock(&mutexBateau);
 		}
+		
 		pthread_mutex_unlock(&mutexMer);
 		pthread_mutex_lock(&mutexSyncro);
 		syncroIA--;
@@ -937,7 +946,7 @@ int deplacementBateau(Bateau *pBateau)
 		if(pBateau->sens == DROITE)
 			// Detection obstacle
 			if(tab[pBateau->L][(pBateau->C + pBateau->type)%NB_COLONNES] != 0)
-				pBateau->sens = GAUCHE;
+				rand()%3 ? pBateau->sens = DROITE :pBateau->sens = GAUCHE;
 			else
 				pBateau->C = (pBateau->C + 1)%NB_COLONNES;
 		else
@@ -947,7 +956,7 @@ int deplacementBateau(Bateau *pBateau)
 			else
 				tmp = pBateau->C -1;
 			if(tab[pBateau->L][(tmp)%NB_COLONNES] != 0)
-				pBateau->sens = DROITE; 
+				rand()%3 ? pBateau->sens = GAUCHE :pBateau->sens = DROITE;
 			else
 				pBateau->C = (tmp)%NB_COLONNES;
 		}
@@ -956,7 +965,7 @@ int deplacementBateau(Bateau *pBateau)
 	{
 		if(pBateau->sens == BAS)
 			if(tab[(pBateau->L + pBateau->type)%NB_LIGNES][pBateau->C] != 0)
-				pBateau->sens = HAUT;
+				rand()%3 ? pBateau->sens = BAS :pBateau->sens = HAUT;
 			else
 				pBateau->L = (pBateau->L + 1)%NB_LIGNES;
 		else
@@ -966,7 +975,7 @@ int deplacementBateau(Bateau *pBateau)
 			else
 				tmp = pBateau->L -1;
 			if(tab[(tmp)%NB_LIGNES][pBateau->C] != 0)
-				pBateau->sens = BAS;
+				rand()%3 ? pBateau->sens = HAUT :pBateau->sens = BAS;
 			else
 				pBateau->L = (tmp)%NB_LIGNES;
 		}
@@ -994,15 +1003,15 @@ void HandlerSIGUSR2(int sig, siginfo_t *info,void *p)
 		{
 			pthread_mutex_lock(&comBateau->mutex);
 			while(comBateau->indLecture == comBateau->indEcriture)
-			pthread_cond_wait(&comBateau->cond,&comBateau->mutex);
+				pthread_cond_wait(&comBateau->cond,&comBateau->mutex);
 			pthread_mutex_lock(&mutexMer);
 			//memcpy(&resultTir,&comBateau->Requete[comBateau->indLecture],sizeof(Message));
 			resultTir = comBateau->Requete[comBateau->indLecture];
 			comBateau->indLecture ++;
 			memcpy(&reqTir, resultTir.getData(), sizeof(RequeteTir));
 			//Trace("Toucher ! envois a %d   pos %d -- %d", resultTir.getExpediteur(), reqTir.L, reqTir.C );
-			EffaceCarre(reqTir.L, reqTir.C);
-			DessineBateau(reqTir.L, reqTir.C,pBateau->type, pBateau->direction, pBateau->direction == VERTICAL ? reqTir.L - pBateau->L : reqTir.C - pBateau->C);
+			//EffaceCarre(reqTir.L, reqTir.C);
+			//DessineBateau(reqTir.L, reqTir.C,pBateau->type, pBateau->direction, pBateau->direction == VERTICAL ? reqTir.L - pBateau->L : reqTir.C - pBateau->C);
 			//Trace("%d %d ")
 			DessineExplosion(reqTir.L, reqTir.C, ORANGE);
 			if(comBateau->indEcriture != pBateau->type)
@@ -1014,6 +1023,8 @@ void HandlerSIGUSR2(int sig, siginfo_t *info,void *p)
 			else
 			{
 				Trace("Badaboum");
+				pthread_mutex_unlock(&comBateau->mutex);
+				pthread_mutex_unlock(&mutexMer);
 				pthread_mutex_lock(&mutexBateau);
 	
 				nbBateaux--;
